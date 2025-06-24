@@ -1,0 +1,28 @@
+# Fear of View
+A terminal broughlike game about manipulating vision.
+
+![Screenshot](fov-shot.png "Screenshot")
+
+Released under the AGPL, version 3 or later.
+
+## Play by ssh
+* ssh fov@thegonz.net
+* Password: fov
+
+## Install
+### Using cabal
+This is the most reliable installation method, but requires you to have cabal-install and ncurses installed. It should then just be a matter of:
+```
+cabal update && cabal install fearOfView
+```
+
+### Linux binary
+Unpack the following tarball and run the script `fearOfView.sh` in a terminal. It should work on any reasonably up-to-date system (Debian 11+); please let me know if it doesn't.
+=> fearOfView-latest-linux-x86_32-glibc-2.31.tgz
+
+I'm afraid I can't currently package for other systems. If you manage to compile from source on Windows, please let me know.
+
+## Source
+```
+git clone https://thegonz.net/~fov/fearOfView.git
+```
