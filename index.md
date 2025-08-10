@@ -12,13 +12,17 @@ Released under the AGPL, version 3 or later.
 ## Install
 ### Using cabal
 This is the most reliable installation method, but requires you to have cabal-install and ncurses installed. It should then just be a matter of:
+
 ```
 cabal update && cabal install fearOfView
 ```
 
 ### Linux binary
-Unpack the following tarball and run the script `fearOfView.sh` in a terminal. It should work on any reasonably up-to-date system (Debian 11+); please let me know if it doesn't.
-[fearOfView-linux-x86_32-glibc-2.31.tgz](fearOfView-linux-x86_32-glibc-2.31.tgz)
+Unpack the following tarball and run the script `fearOfView.sh` in a terminal.
+
+* [fearOfView-linux-x86_32-glibc-2.31.tgz](fearOfView-linux-x86_32-glibc-2.31.tgz)
+
+It should work on any reasonably up-to-date system (Debian 11+); please let me know if it doesn't.
 
 I'm afraid I can't currently package for other systems. If you manage to compile from source on Windows, please let me know.
 
