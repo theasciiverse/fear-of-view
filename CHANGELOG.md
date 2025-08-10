@@ -1,5 +1,5 @@
 # Revision history for fearOfView
 
-## 0.1.0.0 -- YYYY-mm-dd
+## 0.1.0.0 -- 2025-08-10
 
 * First release.
