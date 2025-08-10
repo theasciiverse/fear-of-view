@@ -18,7 +18,7 @@ cabal update && cabal install fearOfView
 
 ### Linux binary
 Unpack the following tarball and run the script `fearOfView.sh` in a terminal. It should work on any reasonably up-to-date system (Debian 11+); please let me know if it doesn't.
-=> fearOfView-latest-linux-x86_32-glibc-2.31.tgz
+[fearOfView-linux-x86_32-glibc-2.31.tgz](fearOfView-linux-x86_32-glibc-2.31.tgz)
 
 I'm afraid I can't currently package for other systems. If you manage to compile from source on Windows, please let me know.
 
