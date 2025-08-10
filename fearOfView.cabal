@@ -6,9 +6,6 @@ license-file:       COPYING
 maintainer:         mbays@sdf.org
 author:             mbays
 homepage:           https://mbays.sdf.org/fov/
-source-repository head
-    type: git
-    location: https://thegonz.net/~fov/fearOfView.git
 synopsis:           A terminal broughlike game about manipulating vision 
 description:
     A constrained roguelike ("broughlike") game played on a 5x5 grid of cells
@@ -16,6 +13,10 @@ description:
     using the ncurses library.
 category:           Game
 extra-source-files: CHANGELOG.md README.md fov-shot.png
+
+source-repository head
+    type: git
+    location: https://thegonz.net/~fov/fearOfView.git
 
 flag debug
     description: Enable debug keys
