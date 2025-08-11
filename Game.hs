@@ -14,6 +14,7 @@ import           Control.Monad.Writer
 import           Data.Functor
 import           Data.Functor.Identity
 import           Data.Maybe
+import           Data.Monoid           (getAny, getSum)
 
 import qualified Data.IntMap.Strict    as IM
 import qualified Data.Map.Strict       as M

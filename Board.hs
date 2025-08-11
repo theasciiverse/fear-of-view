@@ -9,6 +9,7 @@ import           Data.Function         (on)
 import           Data.Functor          (($>))
 import           Data.Functor.Identity
 import           Data.Maybe
+import           Data.Monoid           (Any(..), Sum(..))
 import           Safe
 
 import qualified Data.HashSet          as HS

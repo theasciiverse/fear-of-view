@@ -6,6 +6,7 @@ module Main where
 
 import           Codec.Serialise
 import           Control.Exception.Safe
+import           Control.Monad          (void, when)
 import           Control.Monad.Except
 import           Control.Monad.State
 import           Safe

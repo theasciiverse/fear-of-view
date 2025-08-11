@@ -6,6 +6,7 @@
 
 module CursesUIMInstance where
 
+import           Control.Monad            (forM_)
 import           Control.Monad.State
 import           Data.List                ((\\))
 import           Data.Maybe

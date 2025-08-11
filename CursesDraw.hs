@@ -5,10 +5,11 @@
 module CursesDraw where
 
 import           Control.Concurrent  (threadDelay)
+import           Control.Monad       (forM, forM_, mplus, unless, void)
 import           Control.Monad.State
 import           Data.Bifunctor
 import           Data.Function       (on)
-import           Data.List           (foldl', intersperse, minimumBy)
+import           Data.List           (intersperse, minimumBy)
 import           Data.Maybe
 import           Safe
 
