@@ -3,6 +3,8 @@ A terminal broughlike game about manipulating vision.
 
 ![Screenshot](fov-shot.png "Screenshot")
 
+[Gameplay animation](fov-anim.gif)
+
 Released under the AGPL, version 3 or later.
 
 ## Play by ssh
