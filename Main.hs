@@ -4,16 +4,20 @@
 
 module Main where
 
-import           Codec.Serialise
-import           Control.Exception.Safe
+import           Codec.Serialise        (readFileDeserialise,
+                                         writeFileSerialise)
+import           Control.Exception.Safe (Exception, catch, throw, tryAny)
 import           Control.Monad          (void, when)
-import           Control.Monad.Except
-import           Control.Monad.State
-import           Safe
-import           System.Console.GetOpt
-import           System.Directory
-import           System.Environment
-import           System.Exit
+import           Control.Monad.Except   (ExceptT, runExceptT)
+import           Control.Monad.State    (get, gets, lift, liftIO, put)
+import           Safe                   (headMay)
+import           System.Console.GetOpt  (ArgDescr (..), ArgOrder (..),
+                                         OptDescr (..), getOpt, usageInfo)
+import           System.Directory       (XdgDirectory (..),
+                                         createDirectoryIfMissing,
+                                         getXdgDirectory)
+import           System.Environment     (getArgs)
+import           System.Exit            (exitSuccess)
 import           System.FilePath        ((</>))
 
 import           CursesUIMInstance      ()

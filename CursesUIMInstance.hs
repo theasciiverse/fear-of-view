@@ -7,9 +7,9 @@
 module CursesUIMInstance where
 
 import           Control.Monad            (forM_)
-import           Control.Monad.State
+import           Control.Monad.State      (evalStateT, liftIO, modify)
 import           Data.List                ((\\))
-import           Data.Maybe
+import           Data.Maybe               (isJust, maybeToList)
 
 import qualified UI.HSCurses.Curses       as C
 import qualified UI.HSCurses.CursesHelper as CH

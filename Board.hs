@@ -2,15 +2,17 @@
 
 module Board where
 
-import           Control.Monad.Random
-import           Control.Monad.Writer
-import           Data.Bifunctor
+import           Control.Monad         (foldM, guard, when)
+import           Control.Monad.Random  (Rand, StdGen)
+import           Control.Monad.Writer  (Writer, WriterT, lift, mapWriterT,
+                                        runWriter, tell)
+import           Data.Bifunctor        (second)
 import           Data.Function         (on)
 import           Data.Functor          (($>))
-import           Data.Functor.Identity
-import           Data.Maybe
-import           Data.Monoid           (Any(..), Sum(..))
-import           Safe
+import           Data.Functor.Identity (runIdentity)
+import           Data.Maybe            (fromMaybe, mapMaybe)
+import           Data.Monoid           (Any (..), Sum (..))
+import           Safe                  (atMay, headMay, minimumMay)
 
 import qualified Data.HashSet          as HS
 import qualified Data.Map.Strict       as M

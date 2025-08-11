@@ -8,12 +8,16 @@ module Game where
 
 import           Prelude               hiding (round)
 
-import           Control.Monad.Random
-import           Control.Monad.State
-import           Control.Monad.Writer
-import           Data.Functor
-import           Data.Functor.Identity
-import           Data.Maybe
+import           Control.Monad         (unless, when)
+import           Control.Monad.Random  (Rand, StdGen, initStdGen, mkStdGen,
+                                        runRand)
+import           Control.Monad.State   (MonadIO, MonadState, StateT, evalStateT,
+                                        get, gets, modify, put)
+import           Control.Monad.Writer  (Writer, WriterT, mapWriterT, runWriter,
+                                        runWriterT, tell)
+import           Data.Functor          (($>))
+import           Data.Functor.Identity (runIdentity)
+import           Data.Maybe            (fromMaybe)
 import           Data.Monoid           (getAny, getSum)
 
 import qualified Data.IntMap.Strict    as IM

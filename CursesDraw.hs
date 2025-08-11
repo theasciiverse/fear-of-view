@@ -6,12 +6,13 @@ module CursesDraw where
 
 import           Control.Concurrent  (threadDelay)
 import           Control.Monad       (forM, forM_, mplus, unless, void)
-import           Control.Monad.State
-import           Data.Bifunctor
+import           Control.Monad.State (get, gets, lift, liftIO, put, runStateT)
+import           Data.Bifunctor      (bimap)
+import           Data.Foldable       (foldl')
 import           Data.Function       (on)
 import           Data.List           (intersperse, minimumBy)
-import           Data.Maybe
-import           Safe
+import           Data.Maybe          (fromMaybe, isJust, isNothing, maybeToList)
+import           Safe                (atMay)
 
 import qualified Data.Map.Strict     as M
 import qualified Data.Set            as S
