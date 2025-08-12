@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP              #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE LambdaCase       #-}
 {-# LANGUAGE TupleSections    #-}
@@ -8,11 +9,15 @@ import           Control.Concurrent  (threadDelay)
 import           Control.Monad       (forM, forM_, mplus, unless, void)
 import           Control.Monad.State (get, gets, lift, liftIO, put, runStateT)
 import           Data.Bifunctor      (bimap)
-import           Data.Foldable       (foldl')
 import           Data.Function       (on)
 import           Data.List           (intersperse, minimumBy)
 import           Data.Maybe          (fromMaybe, isJust, isNothing, maybeToList)
 import           Safe                (atMay)
+
+#if !MIN_VERSION_base(4,20,0)
+-- foldl' started being exported from prelude in base-4.20.0
+import           Data.Foldable       (foldl')
+#endif
 
 import qualified Data.Map.Strict     as M
 import qualified Data.Set            as S
