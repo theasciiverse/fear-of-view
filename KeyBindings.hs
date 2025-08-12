@@ -43,7 +43,8 @@ dvorakViBindings =
     ]
 
 wasdBindings = lowerToo
-    [ ('W', C.Dir P.DLeft)
+    [ ('A', C.Dir P.DLeft)
+    , ('Z', C.Dir P.DLeft)  -- for AZERTY
     , ('S', C.Dir P.DDown)
     , ('W', C.Dir P.DUp)
     , ('D', C.Dir P.DRight)
