@@ -507,7 +507,10 @@ drawMainScreen game = do
             , let lev = HS.maxLevel hs in (showLevel lev, levelStyle lev)
             ] <>
             [ ("  ", style0) ] <>
-            [ (take 1 $ show e, equipStyle e) | e <- S.toList $ HS.equipment hs ]
+            [ if e `elem` HS.equipment hs
+                then (take 1 $ show e, equipStyle e)
+                else ("-", style0)
+            | e <- allEquipment ]
         scoreX showName = min ((scrW - l) `div` 2) (scrW - l - 1 - aKeyL)
             where l = sum $ [length "99   99~  99:C"]
                     <> [11 | showName] <> [2 + length allEquipment]
