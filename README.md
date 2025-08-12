@@ -1,7 +1,7 @@
 # Fear of View
 A terminal broughlike game about manipulating vision.
 
-Released under the AGPL, version 3 or later. See LICENSE.
+Released under the AGPL, version 3 or later. See COPYING.
 
 ![Screenshot](fov-shot.png "Screenshot")
 
