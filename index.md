@@ -8,7 +8,7 @@ A terminal broughlike game about manipulating vision.
 Released under the AGPL, version 3 or later.
 
 ## Play by ssh
-* ssh fov@thegonz.net
+* ssh fov@sshgames.thegonz.net
 * Password: fov
 
 ## Install
