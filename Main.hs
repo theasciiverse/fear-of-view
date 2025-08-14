@@ -20,17 +20,29 @@ import           System.Environment     (getArgs)
 import           System.Exit            (exitSuccess)
 import           System.FilePath        ((</>))
 
-import           CursesUIMInstance      ()
 import           GameName
 import           KeyBindings            (dvorakViBindings)
 import           Serialise              ()
 
 import qualified Command                as Cmd
-import qualified CursesUI               as CU
 import qualified Game                   as G
 import qualified Highscore              as HS
 import qualified HighscoreFile          as HSF
 import qualified UIMonad                as UIM
+
+#ifdef CURSES
+import qualified CursesUI               as CU
+import           CursesUIMInstance      ()
+#endif
+
+#ifdef BEAR
+import qualified BearUI                 as BU
+import           BearUIMInstance        ()
+#ifdef CURSES
+#define BOTH
+import           Control.Monad          (unless)
+#endif
+#endif
 
 version :: String
 version = CURRENT_PACKAGE_VERSION
@@ -42,6 +54,9 @@ data Opt
     | Dvorak
     | Help
     | Version
+#ifdef BOTH
+    | Curses
+#endif
     deriving (Eq, Ord, Show)
 
 options :: [OptDescr Opt]
@@ -52,6 +67,9 @@ options =
     , Option ['d'] ["dvorak"] (NoArg Dvorak) "Use dvorak roguelike keys (htns)"
     , Option ['h'] ["help"] (NoArg Help) "Show usage information"
     , Option ['v'] ["version"] (NoArg Version) "Show version information"
+#ifdef BOTH
+    , Option ['c'] ["curses"] (NoArg Curses) "Run in textmode"
+#endif
     ]
 
 usage :: String
@@ -78,28 +96,45 @@ main = do
     let ascii = AsciiOnly `elem` opts
     let dvorak = Dvorak `elem` opts
     let username = headMay [ name | Username name <- opts ]
+
+    let ui :: UIM.UIMonad m => m ()
+        ui = G.runT $ do
+            lift $ UIM.setAsciiOnly ascii
+            when dvorak . lift $ sequence_ [ UIM.setUIBinding ch cmd | (ch,cmd) <- dvorakViBindings ]
+            liftIO (tryAny $ readFileDeserialise statePath) >>= \case
+                Right game -> put game
+                Left _     -> G.initGame
+            let mainLoop :: UIM.UIMonad uiM => G.T uiM ()
+                mainLoop = do
+                    liftIO . writeFileSerialise statePath =<< get
+                    lift . UIM.draw =<< get
+                    G.clearTrans
+                    playSt <- gets G.playState
+                    let after = do
+                            playSt' <- gets G.playState
+                            when (playSt == G.Playing && playSt' `elem` [G.Dead, G.Won]) $
+                                liftIO . HSF.add =<< gets (G.highscore username)
+                            mainLoop
+                    runExceptT (mapM_ processCommand =<< (lift . lift) UIM.getInput) >>=
+                        either pure (const after)
+            mainLoop
+
+#ifdef BEAR
+    let doBUI :: BU.UIM () -> IO ()
+        doBUI m = void (UIM.doUI m) `catch` (\QuitException -> exitSuccess)
+
+#ifdef CURSES
+    unless (Curses `elem` opts) $ doBUI ui
+#else
+    doBUI ui
+#endif
+#endif
+
+#ifdef CURSES
     let doCUI :: CU.UIM () -> IO ()
         doCUI m = void (UIM.doUI m) `catch` (\QuitException -> exitSuccess)
-    doCUI . G.runT $ do
-        lift $ UIM.setAsciiOnly ascii
-        when dvorak . lift $ sequence_ [ UIM.setUIBinding ch cmd | (ch,cmd) <- dvorakViBindings ]
-        liftIO (tryAny $ readFileDeserialise statePath) >>= \case
-            Right game -> put game
-            Left _     -> G.initGame
-        let mainLoop :: UIM.UIMonad uiM => G.T uiM ()
-            mainLoop = do
-                liftIO . writeFileSerialise statePath =<< get
-                lift . UIM.draw =<< get
-                G.clearTrans
-                playSt <- gets G.playState
-                let after = do
-                        playSt' <- gets G.playState
-                        when (playSt == G.Playing && playSt' `elem` [G.Dead, G.Won]) $
-                            liftIO . HSF.add =<< gets (G.highscore username)
-                        mainLoop
-                runExceptT (mapM_ processCommand =<< (lift . lift) UIM.getInput) >>=
-                    either pure (const after)
-        mainLoop
+    doCUI ui
+#endif
 
 
 data QuitException = QuitException deriving Show

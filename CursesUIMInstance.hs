@@ -11,17 +11,18 @@ import           Control.Monad.State      (evalStateT, liftIO, modify)
 import           Data.List                ((\\))
 import           Data.Maybe               (isJust, maybeToList)
 
+import qualified Data.Map.Strict          as M
 import qualified UI.HSCurses.Curses       as C
 import qualified UI.HSCurses.CursesHelper as CH
 
 import           CStyle
 import           CursesUI
+import           Geometry
 import           Window
 
 import qualified Command                  as Cmd
 import qualified CPos                     as CP
 import qualified Game                     as G
-import qualified Inventory                as I
 import qualified TermDraw                 as TD
 import qualified UIMonad                  as UIM
 
@@ -38,15 +39,8 @@ instance UIM.UIMonad UIM where
                 ]
         modify $ \s -> s {dispCPairs = cpairs}
         setBkgrnd
-        insWin StatusWin =<< liftIO (C.newWin 2 TD.scrW 0 0)
-        insWin BoardWin =<< liftIO (C.newWin TD.h (TD.w+1) 3 1)
-        insWin InvWin =<< liftIO (C.newWin (3 + length I.slots) 20 3 (1+TD.w+3))
-        insWin EquipWin =<< liftIO (C.newWin (3 + length I.slots) 15 3 (1+TD.w+3+20))
-        let afterBoard = 3 + max TD.h (3 + length I.slots)
-        insWin LevelInfoWin =<< liftIO (C.newWin 3 TD.scrW (1 + afterBoard) 1)
-        insWin MessageWin =<< liftIO (C.newWin 1 TD.scrW (1 + 3 + 1 + afterBoard) 0)
-        insWin MainWin =<< liftIO (C.newWin TD.scrH TD.scrW 0 0)
-        insWin TutorialWin =<< liftIO (C.newWin 3 3 0 50)
+        sequence_ [ insWin win =<< liftIO (C.newWin h w y x)
+            | (win, WinDim x y w h) <- M.assocs geometry ]
         pure True
     endUI = liftIO CH.end
     draw game = unlessSmall $ do
@@ -78,7 +72,7 @@ instance UIM.UIMonad UIM where
                     _                 -> pure ()
         unlessSmall m = do
             (h,w) <- liftIO C.scrSize
-            if h < TD.scrH || w < TD.scrW then
+            if h < scrH || w < scrW then
                 let s = "Terminal too small!"
                 in if w < length s || h < 1 then pure ()
                 else do

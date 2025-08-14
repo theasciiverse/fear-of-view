@@ -12,3 +12,7 @@ Dependencies:
 
 Run with `cabal run`.
 Install with `cabal install`.
+
+### Bearlibterminal
+In case you don't have or like ncurses, the game also supports this alternative terminal library which runs in graphical mode (via OpenGL).
+Install [bearlibterminal](http://foo.wyrd.name/en:bearlibterminal), then run with `cabal run -fbear`.

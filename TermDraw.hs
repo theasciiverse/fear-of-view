@@ -26,6 +26,7 @@ import           Creature
 import           CStyle
 import           Equipment
 import           Exit
+import           Geometry
 import           Group
 import           Item
 import           Wall
@@ -43,15 +44,6 @@ import qualified Power               as Pow
 import qualified RollFrom            as RF
 import qualified TermM               as TM
 import qualified Tutorial            as T
-
-scrW,scrH :: Int
-scrW = 60
-scrH = 20
-
--- Can draw on board at CPos x y for x < w and y < h
-w,h :: Int
-w = B.w * 3 + 1
-h = B.h * 2 + 1
 
 invItemGlyph :: InvItem -> Glyph
 invItemGlyph e = Glyph c $ CStyle cyan True where
@@ -568,16 +560,16 @@ tutBox = tutBox' where
     tutBox' (T.SeeGem p) = Just (boardOffset <> posCPosR p, [itemGlyph Gem])
     tutBox' T.CollectItem = Just (invOffset <> CP.CPos 0 1, [char '1'])
     tutBox' T.CollectGem = Just (invOffset <> CP.CPos 0 10, [Glyph '0' $ CStyle red True])
-    tutBox' T.CollectScore = Just (statusOffset <> CP.CPos 20 0, (char <$> (" 1/" <> show G.maxScore)) <> [Glyph '~' scoreStyle])
-    tutBox' (T.Hurt l ml) = Just (statusOffset <> CP.CPos 6 0, char <$> twoCharNum l <> "/" <> show ml)
+    tutBox' T.CollectScore = Just (statusOffset <> CP.CPos 20 1, (char <$> (" 1/" <> show G.maxScore)) <> [Glyph '~' scoreStyle])
+    tutBox' (T.Hurt l ml) = Just (statusOffset <> CP.CPos 6 1, char <$> twoCharNum l <> "/" <> show ml)
     tutBox' T.Timer = Just (levelInfoOffset <> CP.CPos (G.initCreatureSides - 4) 0, char <$> "-   ]")
     tutBox' T.SecondRound = Just (levelInfoOffset <> CP.CPos 0 2, char <$> "On exit:")
     tutBox' _                  = Nothing
-    boardOffset = CP.CPos 1 3
-    invOffset = CP.CPos (1+w+3) 3
-    statusOffset = CP.CPos 0 1
-    afterBoard = 3 + max h (3 + length I.slots)
-    levelInfoOffset = CP.CPos 1 (1 + afterBoard)
+    winOffset win = CP.CPos x y where WinDim x y _ _ = geometry M.! win
+    boardOffset = winOffset BoardWin
+    invOffset = winOffset InvWin
+    statusOffset = winOffset StatusWin
+    levelInfoOffset = winOffset LevelInfoWin
 
 highlightTut :: TM.TermM m => T.Beat -> m ()
 highlightTut = maybe (pure ()) (uncurry TM.drawHighlightBoxChars) . tutBox

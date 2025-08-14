@@ -19,6 +19,8 @@ This is the most reliable installation method, but requires you to have cabal-in
 cabal update && cabal install fearOfView
 ```
 
+If you want to build with Bearlibterminal instead of ncurses, obtain the source and read the README.
+
 ### Linux binary
 Unpack the following tarball and run the script `fearOfView.sh` in a terminal.
 
@@ -26,7 +28,7 @@ Unpack the following tarball and run the script `fearOfView.sh` in a terminal.
 
 It should work on any reasonably up-to-date system (Debian 11+); please let me know if it doesn't.
 
-I'm afraid I can't currently package for other systems. If you manage to compile from source on Windows, please let me know.
+Windows package coming soon.
 
 ## Source
 ```
