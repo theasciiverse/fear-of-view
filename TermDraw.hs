@@ -54,7 +54,7 @@ w = B.w * 3 + 1
 h = B.h * 2 + 1
 
 invItemGlyph :: InvItem -> Glyph
-invItemGlyph e = Glyph c $ CStyle cyan aBold where
+invItemGlyph e = Glyph c $ CStyle cyan True where
     c = case e of
         Orb          -> 'o'
         Cloak        -> '['
@@ -99,21 +99,21 @@ drawStatus (G.Game { G.life = life, G.maxLife = maxLife, G.score = score, G.leve
         , ("%", junkStyle)
         ]
     lifeStyle = case life of
-        n | n <= 0 -> CStyle (onRed black) aBold
-        1          -> CStyle red aBold
-        2          -> CStyle red a0
-        3          -> CStyle yellow aBold
-        4          -> CStyle yellow a0
+        n | n <= 0 -> CStyle (onRed black) True
+        1          -> CStyle red True
+        2          -> CStyle red False
+        3          -> CStyle yellow True
+        4          -> CStyle yellow False
         5          -> style0
-        6          -> CStyle green a0
-        _          -> CStyle green aBold
+        6          -> CStyle green False
+        _          -> CStyle green True
     statusStrs = intersperse ("   ", style0)
         [ (show (fst status) <> " " <> twoCharNum (snd status), statStyle status)
         | status <- M.assocs statuses ]
-    statStyle (B.Dazzled,_) = CStyle cyan aBold
+    statStyle (B.Dazzled,_) = CStyle cyan True
     statStyle (B.Ghost,_) = style0
-    statStyle (B.Smoke,_) = CStyle blue aBold
-    statStyle (B.Haste,n) = CStyle (if n `mod` 2 == 1 then red else yellow) aBold
+    statStyle (B.Smoke,_) = CStyle blue True
+    statStyle (B.Haste,n) = CStyle (if n `mod` 2 == 1 then red else yellow) True
     statStyle (B.Foresight,_) = styleBold
 
 exitChar :: P.Dir -> Char
@@ -166,12 +166,12 @@ drawTrans (B.Transition bd0 alerts) =
 char,bold,dim :: Char -> Glyph
 char c = Glyph c style0
 bold c = Glyph c styleBold
-dim c = Glyph c $ CStyle (onBlue white) a0
+dim c = Glyph c $ CStyle (onBlue white) False
 
 levelStyle :: Int -> CStyle
-levelStyle 1 = CStyle green a0
-levelStyle 2 = CStyle white aBold
-levelStyle 3 = CStyle yellow aBold
+levelStyle 1 = CStyle green False
+levelStyle 2 = CStyle white True
+levelStyle 3 = CStyle yellow True
 levelStyle _ = style0
 
 showLevel :: Int -> String
@@ -179,41 +179,41 @@ showLevel l | l > 0 = (['A'..] !! (l-1)):""
 showLevel _ = "-"
 
 scoreStyle, junkStyle :: CStyle
-scoreStyle = CStyle yellow a0
-junkStyle = CStyle blue aBold
+scoreStyle = CStyle yellow False
+junkStyle = CStyle blue True
 
 creatureGlyph :: Creature -> Glyph
 creatureGlyph Player          = bold '@'
-creatureGlyph DeadPlayer      = Glyph '@' $ CStyle (onRed black) aBold
-creatureGlyph BasicMonster    = Glyph 'm' $ CStyle yellow a0
-creatureGlyph CalmMonster     = Glyph 'p' $ CStyle blue aBold
-creatureGlyph ChaseMonster    = Glyph 'c' $ CStyle yellow aBold
-creatureGlyph GhostMonster    = Glyph 'g' $ CStyle white aBold
-creatureGlyph SmartMonster    = Glyph 's' $ CStyle red aBold
-creatureGlyph (InflatedBalloon charges) = Glyph '0' . CStyle magenta $ if charges > 0 then aBold else a0
+creatureGlyph DeadPlayer      = Glyph '@' $ CStyle (onRed black) True
+creatureGlyph BasicMonster    = Glyph 'm' $ CStyle yellow False
+creatureGlyph CalmMonster     = Glyph 'p' $ CStyle blue True
+creatureGlyph ChaseMonster    = Glyph 'c' $ CStyle yellow True
+creatureGlyph GhostMonster    = Glyph 'g' $ CStyle white True
+creatureGlyph SmartMonster    = Glyph 's' $ CStyle red True
+creatureGlyph (InflatedBalloon charges) = Glyph '0' . CStyle magenta $ charges > 0
 
 itemGlyph :: Item -> Glyph
-itemGlyph Gem           = Glyph '*' $ CStyle green aBold
-itemGlyph Potion           = Glyph '!' $ CStyle green aBold
-itemGlyph MiniPotion           = Glyph '!' $ CStyle green a0
+itemGlyph Gem           = Glyph '*' $ CStyle green True
+itemGlyph Potion           = Glyph '!' $ CStyle green True
+itemGlyph MiniPotion           = Glyph '!' $ CStyle green False
 itemGlyph ScoreTreasure      = Glyph '~' scoreStyle
 itemGlyph Junk      = Glyph '%' junkStyle
-itemGlyph (UmbrellaHandle d)           = Glyph (if d `elem` [P.DUp, P.DDown] then '|' else '-') $ CStyle magenta aBold
-itemGlyph CameraBoxed           = Glyph ')' $ CStyle cyan a0
-itemGlyph (RollingOrb _ _)           = Glyph 'o' $ CStyle cyan a0
+itemGlyph (UmbrellaHandle d)           = Glyph (if d `elem` [P.DUp, P.DDown] then '|' else '-') $ CStyle magenta True
+itemGlyph CameraBoxed           = Glyph ')' $ CStyle cyan False
+itemGlyph (RollingOrb _ _)           = Glyph 'o' $ CStyle cyan False
 itemGlyph (ItemInvItem e) = invItemGlyph e
 
 wallGlyphVert :: Wall -> Glyph
 wallGlyphVert = \case
     BasicWall -> bold wallchar
     Pillar -> char '|'
-    Hedge -> Glyph wallchar $ CStyle green aBold
-    ThickHedge -> Glyph '║' $ CStyle green a0
-    Window -> Glyph wallchar $ CStyle cyan a0
-    BrokenWindow -> Glyph ';' $ CStyle cyan a0
-    (CloakWall _ _) -> Glyph wallchar $ CStyle cyan aBold
-    (UmbrellaWall d) -> Glyph (if d == P.DRight then '>' else '<') $ CStyle magenta aBold
-    TentWall -> Glyph wallchar $ CStyle red aBold
+    Hedge -> Glyph wallchar $ CStyle green True
+    ThickHedge -> Glyph '║' $ CStyle green False
+    Window -> Glyph wallchar $ CStyle cyan False
+    BrokenWindow -> Glyph ';' $ CStyle cyan False
+    (CloakWall _ _) -> Glyph wallchar $ CStyle cyan True
+    (UmbrellaWall d) -> Glyph (if d == P.DRight then '>' else '<') $ CStyle magenta True
+    TentWall -> Glyph wallchar $ CStyle red True
     where wallchar = '│'
 
 wallGlyphHoriz :: Wall -> (Glyph,Glyph)
@@ -222,15 +222,15 @@ wallGlyphHoriz = \case
     (UmbrellaWall P.DUp) -> (umb '/', umb '\\')
     (UmbrellaWall _)     -> (umb '\\', umb '/')
     BasicWall            -> doublet $ bold wallchar
-    Hedge                -> doublet . Glyph wallchar $ CStyle green aBold
-    ThickHedge           -> doublet . Glyph '═' $ CStyle green a0
-    Window               -> doublet . Glyph wallchar $ CStyle cyan a0
-    BrokenWindow         -> (Glyph '.' $ CStyle cyan a0 , Glyph ',' $ CStyle cyan a0)
-    (CloakWall _ _)      -> doublet . Glyph wallchar $ CStyle cyan aBold
-    TentWall -> doublet . Glyph wallchar $ CStyle red aBold
+    Hedge                -> doublet . Glyph wallchar $ CStyle green True
+    ThickHedge           -> doublet . Glyph '═' $ CStyle green False
+    Window               -> doublet . Glyph wallchar $ CStyle cyan False
+    BrokenWindow         -> (Glyph '.' $ CStyle cyan False , Glyph ',' $ CStyle cyan False)
+    (CloakWall _ _)      -> doublet . Glyph wallchar $ CStyle cyan True
+    TentWall -> doublet . Glyph wallchar $ CStyle red True
     where
     wallchar = '─'
-    umb c = Glyph c $ CStyle magenta aBold
+    umb c = Glyph c $ CStyle magenta True
     doublet gl = (gl,gl)
 
 exitGlyphVert :: CStyle -> P.WPos -> Exit -> Glyph
@@ -289,16 +289,14 @@ drawAlertedBoard AlertedBoard{ base = bd, creatureMoves = cmvs, itemMoves = imvs
             | otherwise = id
         powers = (Nothing,) . Just . powerGlyph <$> B.powers bd
         powerGlyph pow = Glyph '"' $ case True of
-            _ | Pow.charges pow > 0 -> CStyle red aBold
+            _ | Pow.charges pow > 0 -> CStyle red True
             _ | Pow.overUsable pow  -> equipStyle Siphon
             _                       -> style0
         creatures = (,Nothing) . Just . creatureGlyph' <$> B.creatures bd
-        creatureGlyph' Player = Glyph '@' $ CStyle col a where
+        creatureGlyph' Player = Glyph '@' $ CStyle col (not $ B.ghostly bd) where
             col | B.isHasteRound bd = red
                 | B.hasted bd = yellow
                 | otherwise = white
-            a   | B.ghostly bd = a0
-                | otherwise = aBold
         creatureGlyph' c = creatureGlyph c
         obscured = M.fromSet (\p -> (Just . dim $ expectChar p,) . Just . powerBG p . dim $ obsChar p) $ B.poss S.\\ B.visible bd where
             expectChar p
@@ -328,15 +326,15 @@ drawAlertedBoard AlertedBoard{ base = bd, creatureMoves = cmvs, itemMoves = imvs
             | (P.WPos p up, Just i) <- M.toList $
                 M.map wallI (B.walls bd) `M.union` M.map (const $ Just exitCol) (B.exits bd) ]
             where
-            wallI BasicWall        = Just $ CStyle white aBold
-            wallI Hedge            = Just $ CStyle green aBold
-            wallI ThickHedge       = Just $ CStyle green a0
+            wallI BasicWall        = Just $ CStyle white True
+            wallI Hedge            = Just $ CStyle green True
+            wallI ThickHedge       = Just $ CStyle green False
             wallI Pillar           = Nothing
             wallI Window           = Nothing
             wallI BrokenWindow     = Nothing
             wallI (UmbrellaWall _) = Nothing
-            wallI (CloakWall _ _)  = Just $ CStyle cyan aBold
-            wallI TentWall         = Just $ CStyle red aBold
+            wallI (CloakWall _ _)  = Just $ CStyle cyan True
+            wallI TentWall         = Just $ CStyle red True
             exitCol = levBoundSt
             pref a b = minimumBy (compare `on` cstyleCol) [a,b] -- white < green < magenta
         iObscured = M.fromSet (const $ dim ' ') $ S.filter (\p -> P.x p < B.w-1 && P.y p < B.h-1 &&
@@ -376,25 +374,24 @@ drawInv sel preserve highlightEmpty (I.Inventory inv) pow = do
                     str 4 slot style $ show e
         | slot <- I.slots
         , let me = inv M.!? slot
-        , let style = CStyle col attr where
+        , let style = CStyle col b where
                 col | slot <= preserve = yellow
                     | highlightEmpty && isNothing me = red
                     | otherwise = white
-                attr | sel == Just slot = aBold
-                    | otherwise = a0
+                b = sel == Just slot
         ] <>
         [ str 0 (length I.slots + 2) style $ "0 \" " <> show tp <> " " <> show charges <> "/" <> show maxCharges
         | Pow.Power tp charges maxCharges overUsable <- maybeToList pow
         , let style | overUsable && charges == 0 = equipStyle Siphon
-                | otherwise = CStyle red $ if charges > 0 then aBold else a0
+                | otherwise = CStyle red $ charges > 0
         ]
 
 equipStyle :: Equipment -> CStyle
-equipStyle Bag      = CStyle yellow a0
-equipStyle Charm    = CStyle green aBold
-equipStyle GrabHand = CStyle red a0
-equipStyle Key      = CStyle blue aBold
-equipStyle Siphon   = CStyle yellow aBold
+equipStyle Bag      = CStyle yellow False
+equipStyle Charm    = CStyle green True
+equipStyle GrabHand = CStyle red False
+equipStyle Key      = CStyle blue True
+equipStyle Siphon   = CStyle yellow True
 
 drawEquip :: TM.TermM m => S.Set Equipment -> m ()
 drawEquip es | S.null es = pure ()
@@ -413,7 +410,7 @@ drawMessage game = do
                 " points on level " <> show (G.round game) <>
                 ":" <> showLevel (G.level game) <> ".  [Space]", styleBold)
             G.Won             -> ("Congratulations, you win!  [Space]", styleBold)
-            G.Tutorialising b -> (T.text b <> "  [Spc/T]", CStyle magenta aBold)
+            G.Tutorialising b -> (T.text b <> "  [Spc/T]", CStyle magenta True)
             _                 -> ("", style0)
     TM.drawStr win style (CP.CPos 0 0) text
 
@@ -481,9 +478,9 @@ drawMainScreen game = do
                 ]
             ] where
             titleX = (scrW - length "| Fe@r of|View") `div` 2
-            bdSt = CStyle yellow aBold
-            bgSt = CStyle (onBlue white) aBold
-        wonStyle = CStyle magenta aBold
+            bdSt = CStyle yellow True
+            bgSt = CStyle (onBlue white) True
+        wonStyle = CStyle magenta True
 
     ascii <- TM.asciiOnly
 
@@ -493,12 +490,12 @@ drawMainScreen game = do
             (case info of
                 HSRank rank -> [(twoCharNum rank, styleBold)]
                 HSAlive     -> [(" @", styleBold)]
-                HSDead      -> [(" ",style0), ("@", CStyle (onRed white) aBold)]
+                HSDead      -> [(" ",style0), ("@", CStyle (onRed white) True)]
                 HSWon       -> [(" ",style0), ("@", wonStyle)]
             ) <>
             [ ("   ", style0)
             ] <>
-            [ (take 8 (fromMaybe "[anon]" (HS.name hs) <> repeat ' ') <> "  ", CStyle cyan aBold)
+            [ (take 8 (fromMaybe "[anon]" (HS.name hs) <> repeat ' ') <> "  ", CStyle cyan True)
             | showName
             ] <>
             [ (twoCharNum (HS.score hs) <> "~",
@@ -545,14 +542,14 @@ drawMainScreen game = do
         let someNamed = any (isJust . HS.name) hss
         drawStyledStrs win (CP.CPos (scoreX someNamed - 1) 9) $
             [ ("Rank ", styleBold) ] <>
-            [ ("  Name    ", CStyle cyan aBold) | someNamed ] <>
+            [ ("  Name    ", CStyle cyan True) | someNamed ] <>
             [ ("Score ", scoreStyle)
             , ("Level ", style0)
             , ("Equip", style0) ]
         sequence_ [ drawHS someNamed (10+i) (HSRank $ 1+i) hs | (i,hs) <- zip [0..] hss ]
 
     sequence_ [ TM.drawStr win
-            (CStyle (onBlue white) $ if n == 0 then aBold else a0)
+            (CStyle (onBlue white) $ n == 0)
             (CP.CPos (scrW - 2 - aKeyL) $ 10 + n) . take aKeyL $ s <> repeat ' '
         | (s,n) <- zip additionalKeys [0..]
         ]
@@ -570,7 +567,7 @@ tutBox = tutBox' where
     tutBox' (T.SeeJunk p) = Just (boardOffset <> posCPosR p, [itemGlyph Junk])
     tutBox' (T.SeeGem p) = Just (boardOffset <> posCPosR p, [itemGlyph Gem])
     tutBox' T.CollectItem = Just (invOffset <> CP.CPos 0 1, [char '1'])
-    tutBox' T.CollectGem = Just (invOffset <> CP.CPos 0 10, [Glyph '0' $ CStyle red aBold])
+    tutBox' T.CollectGem = Just (invOffset <> CP.CPos 0 10, [Glyph '0' $ CStyle red True])
     tutBox' T.CollectScore = Just (statusOffset <> CP.CPos 20 0, (char <$> (" 1/" <> show G.maxScore)) <> [Glyph '~' scoreStyle])
     tutBox' (T.Hurt l ml) = Just (statusOffset <> CP.CPos 6 0, char <$> twoCharNum l <> "/" <> show ml)
     tutBox' T.Timer = Just (levelInfoOffset <> CP.CPos (G.initCreatureSides - 4) 0, char <$> "-  ]")

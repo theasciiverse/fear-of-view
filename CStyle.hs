@@ -1,7 +1,5 @@
 module CStyle where
 
-import qualified UI.HSCurses.Curses as C
-
 type ColPair = Int
 white,red,green,yellow,blue,magenta,cyan,black :: ColPair
 white = 0
@@ -18,15 +16,12 @@ onBlue = (+8) . (`mod` 8)
 onRed = (+16) . (`mod` 8)
 onYellow = (+24) . (`mod` 8)
 
-data CStyle = CStyle { cstyleCol :: ColPair, cstyleAttr :: C.Attr }
-a0, aBold :: C.Attr
-a0 = C.attr0
-aBold = C.setBold a0 True
+data CStyle = CStyle { cstyleCol :: ColPair, cstyleBold :: Bool }
 style0, styleBold :: CStyle
-style0 = CStyle 0 a0
-styleBold = CStyle 0 aBold
+style0 = CStyle 0 False
+styleBold = CStyle 0 True
 
 data Glyph = Glyph { glyphChar :: Char, glyphStyle :: CStyle }
 
 modColour :: (ColPair -> ColPair) -> Glyph -> Glyph
-modColour f (Glyph c (CStyle col a)) = Glyph c (CStyle (f col) a)
+modColour f (Glyph c (CStyle col b)) = Glyph c (CStyle (f col) b)

@@ -80,7 +80,7 @@ colorsToPairs cs = do
 setBkgrnd :: UIM ()
 setBkgrnd = do
     cpairs <- gets dispCPairs
-    liftIO . C.bkgrndSet a0 $ cpairs !! white
+    liftIO . C.bkgrndSet C.attr0 $ cpairs !! white
     liftIO $ C.erase >> C.refresh
 
 wsetBkgrnd :: Window -> UIM ()
@@ -89,17 +89,21 @@ wsetBkgrnd :: Window -> UIM ()
 wsetBkgrnd w = do
     cpairs <- gets dispCPairs
     cw <- getWin w
-    liftIO . C.wbkgrndSet cw a0 $ cpairs !! white
+    liftIO . C.wbkgrndSet cw C.attr0 $ cpairs !! white
     liftIO $ C.werase cw >> C.wRefresh cw
 #else
 wsetBkgrnd _ = pure ()
 #endif
 
+attrOfBold :: Bool -> C.Attr
+attrOfBold False = C.attr0
+attrOfBold True  = C.setBold C.attr0 True
+
 wSetStyle :: Window -> CStyle -> UIM ()
-wSetStyle w (CStyle col attr) = do
+wSetStyle w (CStyle col b) = do
     cpairs <- gets dispCPairs
     cw <- getWin w
-    liftIO $ C.wAttrSet cw (attr, cpairs!!col)
+    liftIO $ C.wAttrSet cw (attrOfBold b, cpairs!!col)
 withStyle :: Window -> CStyle -> (UIM a -> UIM a)
 withStyle w style m = wSetStyle w style >> (m <* wSetStyle w style0)
 
@@ -126,7 +130,7 @@ drawHighlightBoxChars (CP.CPos x y) gls = do
     let w = 2 + length gls
     insWin TutorialWin =<< liftIO (C.newWin 3 w (y-1) (x-1))
     ascii <- gets asciiOnly
-    withStyle TutorialWin (CStyle magenta aBold) $ liftIO . drawBorder ascii (3,w) =<< getWin TutorialWin
+    withStyle TutorialWin (CStyle magenta True) $ liftIO . drawBorder ascii (3,w) =<< getWin TutorialWin
     sequence_ [ drawGlyph TutorialWin (CP.CPos (1+n) 1) gl | (gl,n) <- zip gls [0..] ]
     where
     -- Draw border manually rather than using C.wBorder:
