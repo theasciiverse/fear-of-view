@@ -3,11 +3,11 @@
 {-# LANGUAGE LambdaCase       #-}
 {-# LANGUAGE TupleSections    #-}
 
-module CursesDraw where
+module TermDraw where
 
 import           Control.Concurrent  (threadDelay)
 import           Control.Monad       (forM, forM_, mplus, unless, void)
-import           Control.Monad.State (get, gets, lift, liftIO, put, runStateT)
+import           Control.Monad.State (get, lift, liftIO, put, runStateT)
 import           Data.Bifunctor      (bimap)
 import           Data.Function       (on)
 import           Data.List           (intersperse, minimumBy)
@@ -29,11 +29,11 @@ import           Exit
 import           Group
 import           Item
 import           Wall
+import           Window
 
 import qualified Board               as B
 import qualified BoardConf           as BC
 import qualified CPos                as CP
-import qualified CursesUI            as CU
 import qualified Game                as G
 import qualified Highscore           as HS
 import qualified HighscoreFile       as HSF
@@ -41,6 +41,7 @@ import qualified Inventory           as I
 import qualified Pos                 as P
 import qualified Power               as Pow
 import qualified RollFrom            as RF
+import qualified TermM               as TM
 import qualified Tutorial            as T
 
 scrW,scrH :: Int
@@ -64,20 +65,20 @@ invItemGlyph e = Glyph c $ CStyle cyan aBold where
         Tent         -> 'A'
         Spraypaint _ -> ':'
 
-drawStyledStrs :: CU.Window -> CP.CPos -> [(String, CStyle)] -> CU.UIM ()
+drawStyledStrs :: TM.TermM m => Window -> CP.CPos -> [(String, CStyle)] -> m ()
 drawStyledStrs win (CP.CPos x0 y) = void . (`runStateT` x0) . mapM draw where
     draw (s,style) = do
         x <- get
-        lift $ CU.drawStr win style (CP.CPos x y) s
+        lift $ TM.drawStr win style (CP.CPos x y) s
         put $ x + length s
 
 twoCharNum :: Int -> String
 twoCharNum n | 0 <= n && n < 10 = ' ' : show n
     | otherwise = take 2 $ show n
 
-drawStatus :: G.Game -> CU.UIM ()
+drawStatus :: TM.TermM m => G.Game -> m ()
 drawStatus (G.Game { G.life = life, G.maxLife = maxLife, G.score = score, G.level = level, G.round = rnd, G.junk = junk, G.equipment = equipment, G.board = B.Board { B.statuses = statuses } }) = do
-    let win = CU.StatusWin
+    let win = StatusWin
     unless (M.null statuses) $ drawStyledStrs win (CP.CPos 0 0) statusStrs
     drawStyledStrs win (CP.CPos 0 1) numStrs
     where
@@ -122,7 +123,7 @@ exitChar = \case
     P.DRight -> '>'
     P.DLeft  -> '<'
 
-drawBoard :: B.Board -> CU.UIM ()
+drawBoard :: TM.TermM m => B.Board -> m ()
 drawBoard = drawAlertedBoard . baseAlerted
 
 data AlertedBoard = AlertedBoard
@@ -136,13 +137,13 @@ data AlertedBoard = AlertedBoard
 baseAlerted :: B.Board -> AlertedBoard
 baseAlerted bd = AlertedBoard bd M.empty M.empty M.empty S.empty S.empty
 
-drawTrans :: B.Transition -> CU.UIM ()
+drawTrans :: TM.TermM m => B.Transition -> m ()
 drawTrans (B.Transition bd0 alerts) =
     let alerted = foldl' applyAlert (baseAlerted bd0) alerts
     in do
         drawAlertedBoard alerted
-        CU.wRefresh CU.BoardWin
-        CU.wErase CU.BoardWin
+        TM.wRefresh BoardWin
+        TM.wErase BoardWin
         liftIO (threadDelay 50000)
     where
     applyAlert alerted (B.AlertMoveCreature c p d) =
@@ -258,7 +259,7 @@ wposCPos, wposCPosR :: P.WPos -> CP.CPos
 wposCPos (P.WPos p up) = posCPosL p <> if up then CP.CPos 0 (-1) else CP.CPos 2 0
 wposCPosR = (CP.CPos 1 0 <>) . wposCPos
 
-drawAlertedBoard :: AlertedBoard -> CU.UIM ()
+drawAlertedBoard :: TM.TermM m => AlertedBoard -> m ()
 drawAlertedBoard AlertedBoard{ base = bd, creatureMoves = cmvs, itemMoves = imvs, itemUses = iuses, highlightPs = hps, highlightWPs = hwps } =
     let wallsV :: M.Map P.WPos Glyph
         wallsH :: M.Map P.WPos (Maybe Glyph,Maybe Glyph)
@@ -358,12 +359,12 @@ drawAlertedBoard AlertedBoard{ base = bd, creatureMoves = cmvs, itemMoves = imvs
             , M.mapKeys posIntCPos intersections
             ]
     in do
-        sequence_ $ M.mapWithKey (CU.drawGlyph CU.BoardWin) glyphs
+        sequence_ $ M.mapWithKey (TM.drawGlyph BoardWin) glyphs
 
-drawInv :: Maybe I.Slot -> Int -> Bool -> I.Inventory -> Maybe Pow.Power -> CU.UIM ()
+drawInv :: TM.TermM m => Maybe I.Slot -> Int -> Bool -> I.Inventory -> Maybe Pow.Power -> m ()
 drawInv sel preserve highlightEmpty (I.Inventory inv) pow = do
-    let win = CU.InvWin
-    let str x y st = CU.drawStr win st (CP.CPos x y)
+    let win = InvWin
+    let str x y st = TM.drawStr win st (CP.CPos x y)
     str 0 0 styleBold "Inventory:"
     sequence_ $
         [ do
@@ -371,7 +372,7 @@ drawInv sel preserve highlightEmpty (I.Inventory inv) pow = do
             case me of
                 Nothing -> pure ()
                 Just e -> do
-                    CU.drawGlyph win (CP.CPos 2 slot) (invItemGlyph e)
+                    TM.drawGlyph win (CP.CPos 2 slot) (invItemGlyph e)
                     str 4 slot style $ show e
         | slot <- I.slots
         , let me = inv M.!? slot
@@ -395,18 +396,18 @@ equipStyle GrabHand = CStyle red a0
 equipStyle Key      = CStyle blue aBold
 equipStyle Siphon   = CStyle yellow aBold
 
-drawEquip :: S.Set Equipment -> CU.UIM ()
+drawEquip :: TM.TermM m => S.Set Equipment -> m ()
 drawEquip es | S.null es = pure ()
 drawEquip es = do
-    let win = CU.EquipWin
-    let str x y st = CU.drawStr win st (CP.CPos x y)
+    let win = EquipWin
+    let str x y st = TM.drawStr win st (CP.CPos x y)
     str 0 0 styleBold "Equipment:"
     forM_ (zip [1..] (S.toList es)) $ \(y,e) ->
         str 0 y (equipStyle e) $ show e
 
-drawMessage :: G.Game -> CU.UIM ()
+drawMessage :: TM.TermM m => G.Game -> m ()
 drawMessage game = do
-    let win = CU.MessageWin
+    let win = MessageWin
         (text,style) = case G.playState game of
             G.Dead            -> ("You died with " <> show (G.score game) <>
                 " points on level " <> show (G.round game) <>
@@ -414,24 +415,24 @@ drawMessage game = do
             G.Won             -> ("Congratulations, you win!  [Space]", styleBold)
             G.Tutorialising b -> (T.text b <> "  [Spc/T]", CStyle magenta aBold)
             _                 -> ("", style0)
-    CU.drawStr win style (CP.CPos 0 0) text
+    TM.drawStr win style (CP.CPos 0 0) text
 
-drawLevelInfo :: B.Board -> CU.UIM ()
+drawLevelInfo :: TM.TermM m => B.Board -> m ()
 drawLevelInfo bd = do
     drawRoll 0 (BC.creatureRoll bc) G.initCreatureSides creatureGlyph
     drawRoll 1 (BC.wallRoll bc) G.initWallSides wallGlyphVert
     drawDiffsLine 2
     where
-    win = CU.LevelInfoWin
+    win = LevelInfoWin
     nullGlyph = char '-'
-    drawRoll :: Int -> RF.RollFrom a -> Int -> (a -> Glyph) -> CU.UIM ()
+    drawRoll :: TM.TermM m => Int -> RF.RollFrom a -> Int -> (a -> Glyph) -> m ()
     drawRoll m roll initSides f = sequence_ $
-        [ CU.drawGlyph win (CP.CPos n m) $ maybe nullGlyph f (RF.vals roll `atMay` n)
+        [ TM.drawGlyph win (CP.CPos n m) $ maybe nullGlyph f (RF.vals roll `atMay` n)
         | n <- [0 .. RF.sides roll - 1]
-        ] <> [ CU.drawGlyph win (CP.CPos initSides m) $ char ']' ]
+        ] <> [ TM.drawGlyph win (CP.CPos initSides m) $ char ']' ]
     bc = B.conf bd
     diffs = B.diffs bd
-    drawDiffsLine y = CU.drawStr win style0 (CP.CPos 0 y) introStr >> sequence_
+    drawDiffsLine y = TM.drawStr win style0 (CP.CPos 0 y) introStr >> sequence_
         [ do
             draw b . char' $ exitChar dir
             draw (b+1) (char ':')
@@ -447,7 +448,7 @@ drawLevelInfo bd = do
         ]
         where
         introStr = "On exit:  "
-        draw x = CU.drawGlyph win (CP.CPos x y)
+        draw x = TM.drawGlyph win (CP.CPos x y)
         rdfGlyph (BC.Add (BC.DiffableCreature c))    = creatureGlyph c
         rdfGlyph (BC.Swap _ (BC.DiffableCreature c)) = creatureGlyph c
         rdfGlyph (BC.Add (BC.DiffableWall wl))       = wallGlyphVert wl
@@ -463,14 +464,14 @@ data HSInfo
     | HSDead
     | HSWon
 
-drawMainScreen :: G.Game -> CU.UIM ()
+drawMainScreen :: TM.TermM m => G.Game -> m ()
 drawMainScreen game = do
-    let win = CU.MainWin
+    let win = MainWin
         curHs = twiddle $ G.highscore Nothing game where
             twiddle hs = hs { HS.maxLevel = 0, HS.maxRound = HS.maxRound hs + 1 }
         centre style y s
             | y >= scrH = pure ()
-            | otherwise = CU.drawStr win style (CP.CPos ((scrW - length s) `div` 2) y) s
+            | otherwise = TM.drawStr win style (CP.CPos ((scrW - length s) `div` 2) y) s
         drawTitle = sequence_ [ drawStyledStrs win (CP.CPos titleX y) s
             | (y,s) <-
                 [ (0, [ ("·──·──·──·", bdSt), ("     ", bgSt) ])
@@ -484,9 +485,9 @@ drawMainScreen game = do
             bgSt = CStyle (onBlue white) aBold
         wonStyle = CStyle magenta aBold
 
-    ascii <- gets CU.asciiOnly
+    ascii <- TM.asciiOnly
 
-    let drawHS :: Bool -> Int -> HSInfo -> HS.Highscore -> CU.UIM ()
+    let drawHS :: TM.TermM m => Bool -> Int -> HSInfo -> HS.Highscore -> m ()
         drawHS showName y info hs =
             drawStyledStrs win (CP.CPos (scoreX showName) y) $
             (case info of
@@ -550,7 +551,7 @@ drawMainScreen game = do
             , ("Equip", style0) ]
         sequence_ [ drawHS someNamed (10+i) (HSRank $ 1+i) hs | (i,hs) <- zip [0..] hss ]
 
-    sequence_ [ CU.drawStr win
+    sequence_ [ TM.drawStr win
             (CStyle (onBlue white) $ if n == 0 then aBold else a0)
             (CP.CPos (scrW - 2 - aKeyL) $ 10 + n) . take aKeyL $ s <> repeat ' '
         | (s,n) <- zip additionalKeys [0..]
@@ -581,5 +582,5 @@ tutBox = tutBox' where
     afterBoard = 3 + max h (3 + length I.slots)
     levelInfoOffset = CP.CPos 1 (1 + afterBoard)
 
-highlightTut :: T.Beat -> CU.UIM ()
-highlightTut = maybe (pure ()) (uncurry CU.drawHighlightBoxChars) . tutBox
+highlightTut :: TM.TermM m => T.Beat -> m ()
+highlightTut = maybe (pure ()) (uncurry TM.drawHighlightBoxChars) . tutBox

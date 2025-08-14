@@ -16,12 +16,13 @@ import qualified UI.HSCurses.CursesHelper as CH
 
 import           CStyle
 import           CursesUI
+import           Window
 
 import qualified Command                  as Cmd
 import qualified CPos                     as CP
-import qualified CursesDraw               as CD
 import qualified Game                     as G
 import qualified Inventory                as I
+import qualified TermDraw                 as TD
 import qualified UIMonad                  as UIM
 
 instance UIM.UIMonad UIM where
@@ -37,14 +38,14 @@ instance UIM.UIMonad UIM where
                 ]
         modify $ \s -> s {dispCPairs = cpairs}
         setBkgrnd
-        insWin StatusWin =<< liftIO (C.newWin 2 CD.scrW 0 0)
-        insWin BoardWin =<< liftIO (C.newWin CD.h (CD.w+1) 3 1)
-        insWin InvWin =<< liftIO (C.newWin (3 + length I.slots) 20 3 (1+CD.w+3))
-        insWin EquipWin =<< liftIO (C.newWin (3 + length I.slots) 15 3 (1+CD.w+3+20))
-        let afterBoard = 3 + max CD.h (3 + length I.slots)
-        insWin LevelInfoWin =<< liftIO (C.newWin 3 CD.scrW (1 + afterBoard) 1)
-        insWin MessageWin =<< liftIO (C.newWin 1 CD.scrW (1 + 3 + 1 + afterBoard) 0)
-        insWin MainWin =<< liftIO (C.newWin CD.scrH CD.scrW 0 0)
+        insWin StatusWin =<< liftIO (C.newWin 2 TD.scrW 0 0)
+        insWin BoardWin =<< liftIO (C.newWin TD.h (TD.w+1) 3 1)
+        insWin InvWin =<< liftIO (C.newWin (3 + length I.slots) 20 3 (1+TD.w+3))
+        insWin EquipWin =<< liftIO (C.newWin (3 + length I.slots) 15 3 (1+TD.w+3+20))
+        let afterBoard = 3 + max TD.h (3 + length I.slots)
+        insWin LevelInfoWin =<< liftIO (C.newWin 3 TD.scrW (1 + afterBoard) 1)
+        insWin MessageWin =<< liftIO (C.newWin 1 TD.scrW (1 + 3 + 1 + afterBoard) 0)
+        insWin MainWin =<< liftIO (C.newWin TD.scrH TD.scrW 0 0)
         insWin TutorialWin =<< liftIO (C.newWin 3 3 0 50)
         pure True
     endUI = liftIO CH.end
@@ -58,26 +59,26 @@ instance UIM.UIMonad UIM where
         st = G.playState game
         stateWins = case st of
             G.RoundEnded      -> [MainWin]
-            G.Tutorialising b | isJust (CD.tutBox b) -> gameWindows <> [TutorialWin]
+            G.Tutorialising b | isJust (TD.tutBox b) -> gameWindows <> [TutorialWin]
             _                 -> gameWindows
         gameWindows = allWindows \\ [MainWin,TutorialWin]
         drawState = case st of
-            G.RoundEnded -> CD.drawMainScreen game
+            G.RoundEnded -> TD.drawMainScreen game
             _ -> do
                 let bd = G.board game
-                forM_ (reverse $ G.transitions game) CD.drawTrans
-                CD.drawBoard bd
-                CD.drawInv (G.selectedSlot game) (G.preserveSlots game) (G.canGrab game) (G.inventory game) (G.powerOn game)
-                CD.drawEquip $ G.equipment game
-                CD.drawStatus game
-                CD.drawLevelInfo bd
-                CD.drawMessage game
+                forM_ (reverse $ G.transitions game) TD.drawTrans
+                TD.drawBoard bd
+                TD.drawInv (G.selectedSlot game) (G.preserveSlots game) (G.canGrab game) (G.inventory game) (G.powerOn game)
+                TD.drawEquip $ G.equipment game
+                TD.drawStatus game
+                TD.drawLevelInfo bd
+                TD.drawMessage game
                 case st of
-                    G.Tutorialising b -> CD.highlightTut b
+                    G.Tutorialising b -> TD.highlightTut b
                     _                 -> pure ()
         unlessSmall m = do
             (h,w) <- liftIO C.scrSize
-            if h < CD.scrH || w < CD.scrW then
+            if h < TD.scrH || w < TD.scrW then
                 let s = "Terminal too small!"
                 in if w < length s || h < 1 then pure ()
                 else do

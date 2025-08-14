@@ -1,5 +1,6 @@
-{-# LANGUAGE CPP        #-}
-{-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE CPP               #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE LambdaCase        #-}
 
 module CursesUI where
 
@@ -12,22 +13,11 @@ import qualified Data.Map.Strict        as M
 import qualified UI.HSCurses.Curses     as C
 
 import           CStyle
+import           Window
 
 import qualified CPos                   as CP
 import qualified KeyBindings            as KB
-
-data Window
-    = MainWin
-    | StatusWin
-    | BoardWin
-    | InvWin
-    | EquipWin
-    | LevelInfoWin
-    | MessageWin
-    | TutorialWin
-    deriving (Eq,Ord,Enum,Bounded)
-allWindows :: [Window]
-allWindows = [minBound..maxBound]
+import qualified TermM                  as TM
 
 data UIState = UIState
     { dispCPairs    :: [C.Pair]
@@ -165,3 +155,12 @@ wErase, wRefresh, wnoutRefresh :: Window -> UIM ()
 wErase w = liftIO . C.werase =<< getWin w
 wRefresh w = liftIO . C.wRefresh =<< getWin w
 wnoutRefresh w = liftIO . C.wnoutRefresh =<< getWin w
+
+instance TM.TermM UIM where
+    drawStr = drawStr
+    drawGlyph = drawGlyph
+    wErase = wErase
+    wRefresh = wRefresh
+    drawHighlightBoxChars = drawHighlightBoxChars
+    asciiOnly = gets asciiOnly
+

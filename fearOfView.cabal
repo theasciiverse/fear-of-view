@@ -34,7 +34,6 @@ executable fearOfView
         Creature
         CPos
         CStyle
-        CursesDraw
         CursesUI
         CursesUIMInstance
         Equipment
@@ -53,8 +52,11 @@ executable fearOfView
         RollFrom
         UIMonad
         Serialise
+        TermDraw
+        TermM
         Tutorial
         Wall
+        Window
 
     default-language:  Haskell2010
     ghc-options:       -Wall
