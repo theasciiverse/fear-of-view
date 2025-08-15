@@ -6,3 +6,6 @@
 ## 0.1.0.3 -- 2025-08-12
 * Fix incompatibility with recent GHC. Thanks Francesco Ariis.
 * Fix WASD keybindings
+
+## 0.1.1.0 -- 2025-08-15
+* Add bearlibterminal-based UI (enabled with -fbear)
