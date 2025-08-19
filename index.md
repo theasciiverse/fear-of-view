@@ -39,3 +39,8 @@ If you want to build with Bearlibterminal instead of ncurses, obtain the source 
 ```
 git clone https://thegonz.net/~fov/fearOfView.git
 ```
+
+* [Browsable source tree on Hackage](https://hackage.haskell.org/package/fearOfView/src/)
+
+## Feedback
+I welcome feedback by email to [mbays@sdf.org](mailto:mbays@sdf.org).
