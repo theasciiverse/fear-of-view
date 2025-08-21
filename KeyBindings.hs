@@ -48,6 +48,11 @@ wasdBindings = lowerToo
     , ('S', C.Dir P.DDown)
     , ('W', C.Dir P.DUp)
     , ('D', C.Dir P.DRight)
+    -- |for dvorak
+    , ('E', C.Dir P.DRight)
+    , ('O', C.Dir P.DDown)
+    , (',', C.Dir P.DUp)
+    , ('<', C.Dir P.DUp)
     ]
 
 cursorBindings =
@@ -73,10 +78,10 @@ basicBindings =
 
 debugBindings :: KeyBindings
 debugBindings =
-    [ ('P', C.DebugAddPower)
-    , ('J', C.DebugAddJunk)
-    , ('I', C.DebugAddItems)
-    , ('E', C.DebugExit)
+    [ (ctrl 'P', C.DebugAddPower)
+    , (ctrl 'J', C.DebugAddJunk)
+    , (ctrl 'I', C.DebugAddItems)
+    , (ctrl 'E', C.DebugExit)
     ]
 
 defaultBindings = quitBindings <> debugBindings <> wasdBindings <> qwertyViBindings <> cursorBindings <> actionBindings <> basicBindings
