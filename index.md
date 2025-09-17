@@ -13,6 +13,11 @@ Released under the AGPL, version 3 or later.
 * ssh fov@sshgames.thegonz.net
 * Password: fov
 
+## Source
+* [Source tarball](fearOfView-0.1.1.0.tar.gz)
+* Source repository: `git clone https://thegonz.net/~fov/fearOfView.git`
+* [Browsable source tree on Hackage](https://hackage.haskell.org/package/fearOfView/src/)
+
 ## Binaries
 ### Linux binary
 Unpack the following tarball and run the script `fearOfView.sh` in a terminal.
@@ -34,13 +39,6 @@ cabal update && cabal install fearOfView
 ```
 
 If you want to build with Bearlibterminal instead of ncurses, obtain the source and read the README.
-
-## Source
-```
-git clone https://thegonz.net/~fov/fearOfView.git
-```
-
-* [Browsable source tree on Hackage](https://hackage.haskell.org/package/fearOfView/src/)
 
 ## Feedback
 I welcome feedback by email to [mbays@sdf.org](mailto:mbays@sdf.org).
