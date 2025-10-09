@@ -457,10 +457,14 @@ incStatus :: Status -> Int -> Board -> Board
 incStatus st n = modStatuses $ M.alter f st where
     f (Just n') = Just $ n + n'
     f _         = Just n
-hasted,isHasteRound,ghostly,expectant :: Board -> Bool
+hasted,isHasteRound,ghostly,expectant,preexpectant :: Board -> Bool
 hasted = M.member Haste . statuses
 ghostly = M.member Ghost . statuses
 expectant = M.member Foresight . statuses
+-- |preexpectant -- will we be expectant after moving?
+preexpectant bd
+    | Just n <- statuses bd M.!? Foresight = n > 0 || isHasteRound bd
+    | otherwise = False
 isHasteRound bd
     | Just n <- statuses bd M.!? Haste = n `mod` 2 == 1
     | otherwise = False
@@ -596,10 +600,12 @@ doPhysics bd0
         ItemInvItem (Camera n) | n > 0 -> Just . ItemInvItem . Camera $ n-1
             | otherwise -> Nothing
         i -> Just i
-    decayStatuses hasteOnly = M.filter (>0) . M.mapWithKey decay where
+    decayStatuses hasteOnly = M.filterWithKey active . M.mapWithKey decay where
         decay Haste n = n-1
         decay _ n | hasteOnly = n
         decay _ n = n-1
+        active Foresight n = n >= 0
+        active _ n         = n > 0
     rollOrbs bd = foldM rollOrb bd (M.assocs $ items bd) where
         rollOrb :: Board -> (P.Pos, Item) -> Writer [Alert] Board
         rollOrb bd' (p, RollingOrb dir True)

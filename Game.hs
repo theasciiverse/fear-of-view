@@ -374,7 +374,7 @@ activatePower = do
     doPower Pow.Haste _ = modBoard $ B.incStatus B.Haste 8
     doPower Pow.Dazzle _ = modBoard $ B.incStatus B.Dazzled 5
     doPower Pow.Ghost _ = modBoard $ B.incStatus B.Ghost 6
-    doPower Pow.Foresight _ = modBoard $ B.incStatus B.Foresight 11
+    doPower Pow.Foresight _ = modBoard $ B.incStatus B.Foresight 10
     doPower Pow.Teleport p = modBoard $ B.setSafe True . B.modCreatures (M.delete p . M.insert (centre +^ centre +^ neg p) Player)
     doPower Pow.Undo _ = \game -> let (game',trans) = runWriter $ prevTurn undoTurns game in game' { transitions = reverse trans } where
         prevTurn :: Int -> Game -> Writer [B.Transition] Game

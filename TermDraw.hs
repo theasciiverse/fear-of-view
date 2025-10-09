@@ -108,8 +108,9 @@ drawStatus (G.Game { G.life = life, G.maxLife = maxLife, G.score = score, G.leve
         6          -> CStyle green False
         _          -> CStyle green True
     statusStrs = intersperse ("   ", style0)
-        [ (show (fst status) <> " " <> twoCharNum (snd status), statStyle status)
-        | status <- M.assocs statuses ]
+        [ (show stat <> " " <> twoCharNum n, statStyle status)
+        | status@(stat,n) <- M.assocs statuses
+        , n > 0 ]
     statStyle (B.Dazzled,_) = CStyle cyan True
     statStyle (B.Ghost,_) = style0
     statStyle (B.Smoke,_) = CStyle blue True
@@ -300,7 +301,7 @@ drawAlertedBoard AlertedBoard{ base = bd, creatureMoves = cmvs, itemMoves = imvs
         creatureGlyph' c = creatureGlyph c
         obscured = M.fromSet (\p -> (Just . dim $ expectChar p,) . Just . powerBG p . dim $ obsChar p) $ B.poss S.\\ B.visible bd where
             expectChar p
-                | B.expectant bd
+                | B.preexpectant bd
                 , Just (Just c) <- B.expected bd M.!? p = glyphChar $ creatureGlyph' c
                 | otherwise = ' '
             obsChar p
