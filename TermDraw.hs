@@ -65,8 +65,16 @@ drawStyledStrs win (CP.CPos x0 y) = void . (`runStateT` x0) . mapM draw where
         put $ x + length s
 
 twoCharNum :: Int -> String
-twoCharNum n | 0 <= n && n < 10 = ' ' : show n
+twoCharNum n
+    | 0 <= n && n < 10 = ' ' : show n
     | otherwise = take 2 $ show n
+
+-- |Apply style only to the number, not spacing
+twoCharNumStyled :: Int -> CStyle -> [(String, CStyle)]
+twoCharNumStyled n style
+    | 0 <= n && n < 10 = [(" ", style0), (show n, style)]
+    | otherwise = [(take 2 $ show n, style)]
+
 
 drawStatus :: TM.TermM m => G.Game -> m ()
 drawStatus (G.Game { G.life = life, G.maxLife = maxLife, G.score = score, G.level = level, G.round = rnd, G.junk = junk, G.equipment = equipment, G.board = B.Board { B.statuses = statuses } }) = do
@@ -77,8 +85,8 @@ drawStatus (G.Game { G.life = life, G.maxLife = maxLife, G.score = score, G.leve
     -- XXX: keep in sync with magic numbers in highlightTut
     numStrs =
         [ ("Life: ", style0)
-        , (twoCharNum life, lifeStyle)
-        , ("/", style0)
+        ] <> twoCharNumStyled life lifeStyle <>
+        [ ("/", style0)
         , (show maxLife, if maxLife == G.initLife then style0 else equipStyle Charm)
         , ("   Score: ", style0)
         , (twoCharNum score <> "/" <> show G.maxScore, style0)
