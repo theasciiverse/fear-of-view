@@ -57,7 +57,7 @@ isBoundaryWPos (P.WPos (P.Pos _ y) True)  = y `elem` [-1,h-1]
 isBoundaryWPos (P.WPos (P.Pos x _) False) = x `elem` [-1,w-1]
 
 treasuresPerBoard :: Int
-treasuresPerBoard = 5
+treasuresPerBoard = 4
 
 -- XXX If all active, status line is 58 long -- watch out with renaming!
 data Status = Dazzled | Smoke | Haste | Ghost | Foresight deriving (Eq, Ord, Show)
