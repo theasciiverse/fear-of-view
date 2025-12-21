@@ -309,6 +309,7 @@ data Move = Move {mvCreature :: Creature, mvFrom :: P.Pos, mvDir :: P.Dir}
 
 data Alert
     = AlertMoveCreature Creature P.Pos P.Dir
+    | AlertMoveCreatureVia Creature P.Pos
     | AlertMoveItem Item P.Pos P.Dir
     | AlertUseItem Item P.Pos P.Dir
     | AlertHighlight (S.Set P.Pos) (S.Set P.WPos)
@@ -484,7 +485,9 @@ npcsAct bd0
     | isHasteRound bd0 = pure bd0
     | otherwise = do
     actors <- lift . shuffle . M.toList $ npcs bd0
-    foldM npcAct bd0 actors
+    bd' <- foldM npcAct bd0 actors
+    fastActors <- lift . shuffle . filter (isFast . snd) . M.toList $ npcs bd'
+    foldM npcAct bd' fastActors <* mapM_ (tell . (\(p,c) -> [AlertMoveCreatureVia c p])) fastActors
     where
     npcAct :: Board -> (P.Pos, Creature) -> WriterT [Alert] (Rand StdGen) Board
     npcAct bd (p,c)
@@ -507,9 +510,13 @@ npcsAct bd0
     pathAlg BasicMonster = chaseDir
     pathAlg CalmMonster  = chaseDir
     pathAlg GhostMonster = chaseDir
+    pathAlg FastMonster  = chaseDir
     pathAlg SmartMonster = findPathDir
     pathAlg ChaseMonster = findPathDir
     pathAlg _            = \_ _ _ _ -> pure Nothing
+
+    isFast FastMonster = True
+    isFast _ = False
 
 tryUseInvItem :: InvItem -> P.Dir -> Board -> WriterT [Alert] Maybe Board
 tryUseInvItem e d bd

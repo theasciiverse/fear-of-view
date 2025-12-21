@@ -7,6 +7,7 @@ data Creature
     | GhostMonster
     | ChaseMonster
     | CalmMonster
+    | FastMonster
     | BasicMonster
     | InflatedBalloon Int
     deriving (Eq, Ord)
@@ -19,4 +20,5 @@ isMonster SmartMonster        = True
 isMonster GhostMonster        = True
 isMonster ChaseMonster        = True
 isMonster CalmMonster         = True
+isMonster FastMonster         = True
 isMonster BasicMonster        = True

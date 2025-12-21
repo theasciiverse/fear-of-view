@@ -151,6 +151,9 @@ drawTrans (B.Transition bd0 alerts) =
         alerted { creatureMoves = M.insert (P.wposInDir p d) c $ creatureMoves alerted
         , base = B.modCreatures (M.delete p) $ base alerted
         }
+    applyAlert alerted (B.AlertMoveCreatureVia c p) =
+        alerted { base = B.modCreatures (M.insert p c) $ base alerted
+        }
     applyAlert alerted (B.AlertMoveItem i p d) =
         alerted { itemMoves = M.insert (P.wposInDir p d) i $ itemMoves alerted
         , base = B.modItems (M.delete p) $ base alerted
@@ -191,6 +194,7 @@ creatureGlyph CalmMonster     = Glyph 'p' $ CStyle blue True
 creatureGlyph ChaseMonster    = Glyph 'c' $ CStyle yellow True
 creatureGlyph GhostMonster    = Glyph 'g' $ CStyle white True
 creatureGlyph SmartMonster    = Glyph 's' $ CStyle red True
+creatureGlyph FastMonster     = Glyph 'f' $ CStyle magenta True
 creatureGlyph (InflatedBalloon charges) = Glyph '0' . CStyle magenta $ charges > 0
 
 itemGlyph :: Item -> Glyph
