@@ -191,7 +191,6 @@ creatureGlyph Player          = bold '@'
 creatureGlyph DeadPlayer      = Glyph '@' $ CStyle (onRed black) True
 creatureGlyph BasicMonster    = Glyph 'm' $ CStyle yellow False
 creatureGlyph CalmMonster     = Glyph 'p' $ CStyle blue True
-creatureGlyph ChaseMonster    = Glyph 'c' $ CStyle yellow True
 creatureGlyph GhostMonster    = Glyph 'g' $ CStyle white True
 creatureGlyph SmartMonster    = Glyph 's' $ CStyle red True
 creatureGlyph FastMonster     = Glyph 'f' $ CStyle magenta True

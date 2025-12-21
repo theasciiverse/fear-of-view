@@ -62,9 +62,7 @@ genDiffs bc = (M.fromList <$>) . forM P.dirs $ \d -> (d,) <$> genDiffDir d where
         case swapOut of
             Nothing -> addCreature
             Just c -> Swap (DiffableCreature c) . DiffableCreature <$> upgradeCreature c
-    creatureUpgrades BasicMonster = [CalmMonster, ChaseMonster]
-    creatureUpgrades CalmMonster  = [GhostMonster]
-    creatureUpgrades ChaseMonster = [SmartMonster]
+    creatureUpgrades BasicMonster = [CalmMonster, GhostMonster, SmartMonster, FastMonster]
     creatureUpgrades _            = []
     upgradableCreature = not . null . creatureUpgrades
     upgradeCreature = randElemUnsafe . creatureUpgrades

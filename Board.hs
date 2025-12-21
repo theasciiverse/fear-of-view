@@ -500,7 +500,7 @@ npcsAct bd0
         where
         -- Force non-calm monsters to move randomly when next to player
         forceRand :: Maybe P.Dir -> WriterT [Alert] (Rand StdGen) (Maybe P.Dir)
-        forceRand md | c `elem` [ CalmMonster, GhostMonster ] = pure md
+        forceRand md | c == CalmMonster = pure md
         forceRand (Just dir) | not (creatureCanMove bd c p dir) = randAvailableDir
         forceRand Nothing | c == SmartMonster = randAvailableDir
         forceRand md = pure md
@@ -512,11 +512,10 @@ npcsAct bd0
     pathAlg GhostMonster = chaseDir
     pathAlg FastMonster  = chaseDir
     pathAlg SmartMonster = findPathDir
-    pathAlg ChaseMonster = findPathDir
     pathAlg _            = \_ _ _ _ -> pure Nothing
 
     isFast FastMonster = True
-    isFast _ = False
+    isFast _           = False
 
 tryUseInvItem :: InvItem -> P.Dir -> Board -> WriterT [Alert] Maybe Board
 tryUseInvItem e d bd
