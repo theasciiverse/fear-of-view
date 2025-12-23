@@ -215,8 +215,12 @@ setFov hasKey bd0 = setSafe False <$> iter bd0 where
             _             -> bd
         | otherwise =
             maybe bd (($ bd) . modCreatures . M.insert p) <$> RF.roll (BC.creatureRoll bc)
-    createW bd wp =
-        maybe bd (($ bd) . modWalls . M.insert wp) <$> RF.roll (BC.wallRoll bc)
+    createW bd wp
+        | safe bd
+        , ppos:_ <- playerPoss bd
+        , wp `elem` (P.wposInDir ppos <$> P.dirs) = pure bd
+        | otherwise =
+            maybe bd (($ bd) . modWalls . M.insert wp) <$> RF.roll (BC.wallRoll bc)
     revealVis bd
         -- | Needed when all poss revealed on spawning treasure
         | S.null (unrevealed bd) && treasures bd > 0 = setUnrevealed (poss `S.difference` visible bd) bd
