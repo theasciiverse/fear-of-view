@@ -1,8 +1,8 @@
 module Exit where
 
 data Exit
-    = Exit
-    | KeyExit
+    = Exit Bool
+    | KeyExit Bool
     | Entrance
     | UnseenBoundary
     | SeenBoundary

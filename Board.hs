@@ -236,16 +236,19 @@ seeBoundary hasKey bd = do
              S.filter ((== Just UnseenBoundary) . (exits bd M.!?)) $ boundaryWPoss
     set :: P.WPos -> M.Map P.WPos Exit -> M.Map P.WPos Exit
     set wp exs = M.insert wp ex exs where
-        ex  | needKeyExit && S.size (S.map posOfBoundary $ S.delete wp unseen) == 1 = KeyExit
+        ex  | needKeyExit && S.size (S.map posOfBoundary $ S.delete wp unseen) == 1 = KeyExit True
             | S.null . S.delete wp $ S.filter (sameWall wp) unseen =
                 case S.toList $ S.filter (not . sameWall wp) unseen of
-                    [] -> Exit
-                    wp':_ | needKeyExit && all (sameWall wp') (S.delete wp unseen) -> KeyExit
+                    [] -> Exit True
+                    wp':_ | needKeyExit && all (sameWall wp') (S.delete wp unseen) -> KeyExit True
                     _ -> SeenBoundary
             | otherwise = SeenBoundary
         unseen = S.filter ((== Just UnseenBoundary) . (exs M.!?)) boundaryWPoss
         sameWall = (==) `on` P.exitDir
-        needKeyExit = hasKey && notElem KeyExit (M.elems exs)
+        needKeyExit = hasKey && not (any isKeyExit $ M.elems exs)
+            where
+            isKeyExit (KeyExit _) = True
+            isKeyExit _           = False
         posOfBoundary wp' = P.posInDir wp' (P.negDir $ P.exitDir wp')
 
 
@@ -325,13 +328,14 @@ data Transition = Transition { transBase :: Board, transAlerts :: [Alert] }
 data MoveResults = MoveResults
     { damage     :: Sum Int
     , exitings   :: [P.WPos]
+    , alarmings  :: [P.Dir]
     , alerts     :: [Alert]
     , someAction :: Any
     }
 instance Semigroup MoveResults where
-    MoveResults a b c d <> MoveResults a' b' c' d' = MoveResults (a<>a') (b<>b') (c<>c') (d<>d')
+    MoveResults a b c d e <> MoveResults a' b' c' d' e' = MoveResults (a<>a') (b<>b') (c<>c') (d<>d') (e<>e')
 instance Monoid MoveResults where
-    mempty = MoveResults mempty mempty mempty mempty
+    mempty = MoveResults mempty mempty mempty mempty mempty
 action :: MoveResults
 action = mempty { someAction = Any True }
 
@@ -364,9 +368,6 @@ creatureCanTryMove bd c p dir =
         , c /= SmartMonster || p' `S.member` playerFov bd
         ]
 
-exitInDir :: Board -> P.Pos -> P.Dir -> Bool
-exitInDir bd p d = exits bd M.!? P.wposInDir p d `elem` [Just Exit, Just KeyExit]
-
 enterAt :: P.WPos -> Board -> Board
 enterAt wp@(P.WPos (P.Pos x y) _) = modVisible (S.insert p') . modCreatures (M.insert p' Player) . modExits (M.insert wp Entrance) where
     p' = P.Pos (max 0 x) (max 0 y)
@@ -379,7 +380,6 @@ tryMoveCreature :: P.Dir -> P.Pos -> Board -> Writer MoveResults Board
 tryMoveCreature dir p bd
     | Just Player <- creatures bd M.!? p
     , not $ ghostly bd
-    , let wp = P.wposInDir p dir
     , Just wl <- walls bd M.!? wp
     , Just cost <- wallDestructionCost wl
     = do
@@ -393,7 +393,7 @@ tryMoveCreature dir p bd
             _ -> pure bd
         let creatureDestroyed = maybe False isMonster $ creatures bd' M.!? p'
             throughPainful = c == Player && not (ghostly bd) &&
-                (walls bd M.!? P.wposInDir p dir) `elem` [Just Hedge, Just BrokenWindow]
+                (walls bd M.!? wp) `elem` [Just Hedge, Just BrokenWindow]
             dmg = sum $ [2 | creatureDestroyed] <> [1 | throughPainful]
             modMove = modCreatures $ M.insert p' c . M.delete p
             modBalloon
@@ -404,16 +404,28 @@ tryMoveCreature dir p bd
                 | otherwise = id
         tell $ action { damage = Sum dmg, alerts = move c }
         pure . modBalloon . modMove $ bd'
-    | Just Player <- creatures bd M.!? p, exitInDir bd p dir = do
-        tell $ action { exitings = [P.wposInDir p dir], alerts = move Player }
-        pure $  modCreatures (M.delete p) bd
+    | Just Player <- creatures bd M.!? p
+    , Just e <- exits bd M.!? wp = case e of
+        Exit True     -> breakExit Exit
+        KeyExit True  -> breakExit KeyExit
+        Exit False    -> leave
+        KeyExit False -> leave
+        _             -> pure bd
     | otherwise = pure bd
     where
+    wp = P.wposInDir p dir
     move c = [AlertMoveCreature c p dir]
     damageWall = \case
         ThickHedge -> Just Hedge
         Window     -> Just BrokenWindow
         _          -> Nothing
+    breakExit :: (Bool -> Exit) -> Writer MoveResults Board
+    breakExit etp = do
+        tell action { alarmings = [dir] }
+        pure . modConf (BC.apply (diffs bd) dir) $ modExits (M.insert wp $ etp False) bd
+    leave = do
+        tell $ action { exitings = [wp], alerts = move Player }
+        pure $ modCreatures (M.delete p) bd
 
 collectItems :: Board -> Writer [Item] Board
 collectItems bd

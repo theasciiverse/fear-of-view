@@ -274,17 +274,16 @@ modBoardTell = modBoardTellM . (mapWriterT (pure . runIdentity) .)
 
 exitLevel :: MonadState Game m => P.WPos -> m ()
 exitLevel exitPos = do
-    endLevel $ P.exitDir exitPos
+    modify (modLevel $ (`mod` 4) . (+1))
     lev <- gets level
     when (lev <= maxLevel) $
         enterNewBoard False $ B.oppositeWPos exitPos
-    where
-    endLevel :: MonadState Game m => P.Dir -> m ()
-    endLevel dir = do
-        diffs <- gets $ B.diffs . board
-        lev <- gets level
-        modify . modLevels $ IM.adjust (BC.apply diffs dir) lev
-        modify (modLevel $ (`mod` 4) . (+1))
+
+doAlarm :: MonadState Game m => P.Dir -> m ()
+doAlarm dir = do
+    diffs <- gets $ B.diffs . board
+    lev <- gets level
+    modify . modLevels $ IM.adjust (BC.apply diffs dir) lev
 
 movePlayer :: MonadState Game m => P.Dir -> m ()
 movePlayer dir = do
@@ -294,6 +293,7 @@ movePlayer dir = do
         modify $ modLifeWithMax (+ (-(getSum $ B.damage mr)))
         showAlerts bd $ B.alerts mr
         envAct
+        mapM_ doAlarm $ B.alarmings mr
         mapM_ exitLevel $ B.exitings mr
         endTurn
 
@@ -438,7 +438,7 @@ triggeredBeats game = S.unions . S.map triggered $ unseenBeats game where
         , any ((`M.member` B.walls bd) . P.wposInDir p) P.dirs
         = S.singleton $ T.Trapped p
     triggered T.TSeeMonster = uncurry T.SeeMonster `S.map` (S.fromList . M.assocs . M.filter isMonster $ B.creatures bd)
-    triggered T.TSeeExit = T.SeeExit `S.map` M.keysSet (M.filter (== Exit) $ B.exits bd)
+    triggered T.TSeeExit = T.SeeExit `S.map` M.keysSet (M.filter (== Exit True) $ B.exits bd)
     triggered T.TSeeItem = uncurry T.SeeItem `S.map` (S.fromList . M.assocs . M.filter (`notElem` [Potion, MiniPotion, ScoreTreasure, Junk, Gem]) $ B.items bd)
     triggered T.TSeePotion = T.SeePotion `S.map` M.keysSet (M.filter (== Potion) $ B.items bd)
     triggered T.TSeeMiniPotion = T.SeeMiniPotion `S.map` M.keysSet (M.filter (== MiniPotion) $ B.items bd)
@@ -451,7 +451,9 @@ triggeredBeats game = S.unions . S.map triggered $ unseenBeats game where
     triggered T.TCollectGem | p:_ <- B.playerPoss bd, p `M.member` B.powers bd = sng T.CollectGem
     triggered T.TCollectScore | score game == 1 = sng T.CollectScore
     triggered T.TTimer | (RF.sides . BC.creatureRoll $ B.conf bd) < initCreatureSides - 2 = sng T.Timer
-    triggered T.TSecondRound | round game > 1 = sng T.SecondRound
+    triggered T.TMustBreak | p:_ <- B.playerPoss bd
+        , any ((== Just (Exit True)) . (B.exits bd M.!?) . P.wposInDir p) P.dirs
+        = S.singleton T.MustBreak
     triggered T.TTutEnd | S.size (unseenBeats game) == 1 = sng T.TutEnd
     triggered _ = S.empty
     trappedDir p dir = or [ not $ B.inBounds p'

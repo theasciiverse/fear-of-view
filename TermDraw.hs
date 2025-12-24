@@ -117,8 +117,9 @@ drawStatus (G.Game { G.life = life, G.maxLife = maxLife, G.score = score, G.leve
     statStyle (B.Haste,n) = CStyle (if n `mod` 2 == 1 then red else yellow) True
     statStyle (B.Foresight,_) = styleBold
 
-exitChar :: P.Dir -> Char
-exitChar = \case
+exitChar :: Bool -> P.Dir -> Char
+exitChar True = const 'x'
+exitChar False = \case
     P.DUp    -> '^'
     P.DDown  -> 'v'
     P.DRight -> '>'
@@ -239,17 +240,17 @@ wallGlyphHoriz = \case
 
 exitGlyphVert :: CStyle -> P.WPos -> Exit -> Glyph
 exitGlyphVert st wp = \case
-    Exit           -> bold $ exitChar (P.exitDir wp)
-    KeyExit        -> Glyph (exitChar (P.exitDir wp)) $ equipStyle Key
-    Entrance       -> char 'x'
+    Exit locked    -> bold $ exitChar locked (P.exitDir wp)
+    KeyExit locked -> Glyph (exitChar locked (P.exitDir wp)) $ equipStyle Key
+    Entrance       -> exitGlyphVert st wp SeenBoundary
     UnseenBoundary -> char '.'
     SeenBoundary   -> Glyph '│' st
 
 exitGlyphHoriz :: CStyle -> P.WPos -> Exit -> (Glyph,Glyph)
 exitGlyphHoriz st wp = \case
-    Exit           -> (bold $ exitChar (P.exitDir wp), Glyph '─' st)
-    KeyExit        -> (Glyph (exitChar (P.exitDir wp)) $ equipStyle Key, Glyph '─' st)
-    Entrance       -> (char 'x', Glyph '─' st)
+    Exit locked    -> (bold $ exitChar locked (P.exitDir wp), Glyph '─' st)
+    KeyExit locked -> (Glyph (exitChar locked (P.exitDir wp)) $ equipStyle Key, Glyph '─' st)
+    Entrance       -> exitGlyphHoriz st wp SeenBoundary
     UnseenBoundary -> doublet $ char '.'
     SeenBoundary   -> doublet $ Glyph '─' st
     where doublet gl = (gl,gl)
@@ -435,7 +436,7 @@ drawLevelInfo bd = do
     diffs = B.diffs bd
     drawDiffsLine y = TM.drawStr win style0 (CP.CPos 0 y) introStr >> sequence_
         [ do
-            draw b . char' $ exitChar dir
+            draw b . char' $ exitChar False dir
             draw (b+1) (char ':')
             forM (zip [0..] rdfs) (\(x,rdf) -> draw (b+3+x) $ rdfGlyph rdf)
         | (n,dir) <- zip [0..] P.dirs
@@ -448,15 +449,15 @@ drawLevelInfo bd = do
         , Just rdfs <- [diffs M.!? dir]
         ]
         where
-        introStr = "On exit:  "
+        introStr = "Alarm:  "
         draw x = TM.drawGlyph win (CP.CPos x y)
         rdfGlyph (BC.Add (BC.DiffableCreature c))    = creatureGlyph c
         rdfGlyph (BC.Swap _ (BC.DiffableCreature c)) = creatureGlyph c
         rdfGlyph (BC.Add (BC.DiffableWall wl))       = wallGlyphVert wl
         rdfGlyph (BC.Swap _ (BC.DiffableWall wl))    = wallGlyphVert wl
         exitsWith ex = P.exitDir <$> M.keys (M.filter (== ex) (B.exits bd))
-        exitDirs = exitsWith Exit
-        keyExitDirs = exitsWith KeyExit
+        exitDirs = exitsWith (Exit True)
+        keyExitDirs = exitsWith (KeyExit True)
         possibleExitDirs = exitDirs <> keyExitDirs <> exitsWith UnseenBoundary
 
 data HSInfo
@@ -563,7 +564,7 @@ tutBox = tutBox' where
     tutBox' (T.Movement p) = Just (boardOffset <> posCPosL p, [creatureGlyph Player])
     tutBox' (T.Trapped p) = Just (boardOffset <> posCPosL p, [creatureGlyph Player])
     tutBox' (T.SeeMonster p c) = Just (boardOffset <> posCPosL p, [creatureGlyph c])
-    tutBox' (T.SeeExit wp) = Just (boardOffset <> wposCPos wp, [bold . exitChar $ P.exitDir wp])
+    tutBox' (T.SeeExit wp) = Just (boardOffset <> wposCPos wp, [bold . exitChar True $ P.exitDir wp])
     tutBox' (T.SeeItem p i) = Just (boardOffset <> posCPosR p, [itemGlyph i])
     tutBox' (T.SeePotion p) = Just (boardOffset <> posCPosR p, [itemGlyph Potion])
     tutBox' (T.SeeMiniPotion p) = Just (boardOffset <> posCPosR p, [itemGlyph MiniPotion])
@@ -575,7 +576,7 @@ tutBox = tutBox' where
     tutBox' T.CollectScore = Just (statusOffset <> CP.CPos 20 1, (char <$> (" 1/" <> show G.maxScore)) <> [Glyph '~' scoreStyle])
     tutBox' (T.Hurt l ml) = Just (statusOffset <> CP.CPos 6 1, char <$> twoCharNum l <> "/" <> show ml)
     tutBox' T.Timer = Just (levelInfoOffset <> CP.CPos (G.initCreatureSides - 4) 0, char <$> "-   ]")
-    tutBox' T.SecondRound = Just (levelInfoOffset <> CP.CPos 0 2, char <$> "On exit:")
+    tutBox' T.MustBreak = Just (levelInfoOffset <> CP.CPos 0 2, char <$> "Alarm:")
     tutBox' _                  = Nothing
     winOffset win = CP.CPos x y where WinDim x y _ _ = geometry M.! win
     boardOffset = winOffset BoardWin

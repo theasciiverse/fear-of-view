@@ -23,8 +23,8 @@ data Beat
     | SeeJunk P.Pos
     | SeeGem P.Pos
     | SeeExit P.WPos
+    | MustBreak
     | Timer
-    | SecondRound
     | TutEnd
     deriving (Eq, Ord)
 
@@ -41,13 +41,13 @@ data Type
     | TSeeScore
     | TSeeJunk
     | TSeeGem
+    | TMustBreak
     | TCollectItem
     | TCollectItem2
     | TCollectGem
     | TCollectScore
     | THurt
     | TTimer
-    | TSecondRound
     | TTutEnd
     deriving (Eq, Ord, Enum, Bounded, Show)
 
@@ -64,13 +64,13 @@ tp (SeeMiniPotion _) = TSeeMiniPotion
 tp (SeeScore _)      = TSeeScore
 tp (SeeJunk _)       = TSeeJunk
 tp (SeeGem _)        = TSeeGem
+tp MustBreak         = TMustBreak
 tp CollectItem       = TCollectItem
 tp CollectItem2      = TCollectItem2
 tp CollectGem        = TCollectGem
 tp CollectScore      = TCollectScore
 tp (Hurt _ _)        = THurt
 tp Timer             = TTimer
-tp SecondRound       = TSecondRound
 tp TutEnd            = TTutEnd
 
 allTypes :: [Type]
@@ -93,6 +93,8 @@ text = text' . tp
         "That's something you'd rather not see..."
     text' TSeeExit =
         "You found the way out of here, at last."
+    text' TMustBreak =
+        "Breaking the seal will be noisy, but necessary."
     text' TSeeItem =
         "Why are things always in the last place you look?"
     text' TSeePotion =
@@ -117,7 +119,5 @@ text = text' . tp
         "That hurt! Watch where you walk."
     text' TTimer =
         "It gets more dangerous here the longer you stay."
-    text' TSecondRound =
-        "Levels get harder based on which way you leave."
     text' TTutEnd =
         "That was the last hint. You're on your own now."
