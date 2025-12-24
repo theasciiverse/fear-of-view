@@ -97,4 +97,3 @@ exitDir (WPos (Pos _ y') True)
 exitDir (WPos (Pos x' _) False)
     | x' <= 0 = DLeft
     | otherwise = DRight
-

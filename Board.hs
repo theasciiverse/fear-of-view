@@ -236,14 +236,17 @@ seeBoundary hasKey bd = do
              S.filter ((== Just UnseenBoundary) . (exits bd M.!?)) $ boundaryWPoss
     set :: P.WPos -> M.Map P.WPos Exit -> M.Map P.WPos Exit
     set wp exs = M.insert wp ex exs where
-        ex | S.null . S.delete wp $ S.filter (sameWall wp) unseen =
+        ex  | needKeyExit && S.size (S.map posOfBoundary $ S.delete wp unseen) == 1 = KeyExit
+            | S.null . S.delete wp $ S.filter (sameWall wp) unseen =
                 case S.toList $ S.filter (not . sameWall wp) unseen of
                     [] -> Exit
-                    wp':_ | hasKey && all (sameWall wp') (S.delete wp unseen) -> KeyExit
+                    wp':_ | needKeyExit && all (sameWall wp') (S.delete wp unseen) -> KeyExit
                     _ -> SeenBoundary
             | otherwise = SeenBoundary
         unseen = S.filter ((== Just UnseenBoundary) . (exs M.!?)) boundaryWPoss
         sameWall = (==) `on` P.exitDir
+        needKeyExit = hasKey && notElem KeyExit (M.elems exs)
+        posOfBoundary wp' = P.posInDir wp' (P.negDir $ P.exitDir wp')
 
 
 fov, playerFov :: Board -> S.Set P.Pos
