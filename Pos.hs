@@ -97,3 +97,10 @@ exitDir (WPos (Pos _ y') True)
 exitDir (WPos (Pos x' _) False)
     | x' <= 0 = DLeft
     | otherwise = DRight
+
+-- distance in grid of doubled resolution
+distSquaredToWPos :: Pos -> WPos -> Int
+distSquaredToWPos p (WPos p' up') =
+    let dir = if up' then DUp else DRight
+        Pos x' y' = p +^ p +^ neg (p' +^ p' +^ dirPos dir)
+    in x'*x' + y'*y'

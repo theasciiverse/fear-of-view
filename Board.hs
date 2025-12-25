@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP        #-}
 {-# LANGUAGE LambdaCase #-}
 
 module Board where
@@ -15,7 +16,9 @@ import           Data.Monoid           (Any (..), Sum (..))
 import           Safe                  (atMay, headMay, minimumMay)
 
 import qualified Data.HashSet          as HS
+import qualified Data.List             as L
 import qualified Data.Map.Strict       as M
+import qualified Data.Ord              as O
 import qualified Data.Set              as S
 
 import qualified BoardConf             as BC
@@ -170,6 +173,13 @@ treasureAt bd (P.Pos 0 y) | Just i <- possItems bd `atMay` (y+1) = i
 treasureAt bd (P.Pos 2 0) = treasureAt bd $ P.Pos 0 2
 treasureAt _ _ = ScoreTreasure
 
+sortOn' :: (a -> Int) -> [a] -> [a]
+#if !MIN_VERSION_base(4,8,0)
+sortOn' = L.sortOn
+#else
+sortOn' = L.sortBy . O.comparing
+#endif
+
 setFov :: Bool -> Board -> Rand StdGen Board
 setFov hasKey bd0 = setSafe False <$> iter bd0 where
     iter bd =
@@ -182,7 +192,7 @@ setFov hasKey bd0 = setSafe False <$> iter bd0 where
         else do
             bd' <- destroyInvisStuffs . updateVis . destroyInvisWalls . updateVis <$>
                 createAtW (newWVis S.\\ oldWVis) bd
-            newVis' <- shuffle . S.toList $ visible bd' S.\\ oldVis
+            newVis' <- (sortOn' pdist <$>) . shuffle . S.toList $ visible bd' S.\\ oldVis
             let newInvis' = S.toList $ oldVis S.\\ visible bd'
             bd'' <- revealVis <$> (expectAtMaybe newInvis' =<< createAt newVis' bd')
             -- created orbs may lead to new vision, so need to iterate
@@ -226,13 +236,16 @@ setFov hasKey bd0 = setSafe False <$> iter bd0 where
         | S.null (unrevealed bd) && treasures bd > 0 = setUnrevealed (poss `S.difference` visible bd) bd
         -- | Needed only when we created a treasure
         | otherwise = modUnrevealed (`S.difference` visible bd) bd
+    pdist :: P.Pos -> Int
+    pdist | ppos:_ <- playerPoss bd0 = P.distSquared ppos
+        | otherwise = const 0
 
 seeBoundary :: Bool -> Board -> Rand StdGen Board
 seeBoundary hasKey bd = do
     v <- newVisBdd
     pure $ modExits (flip (foldr set) v) bd
     where
-    newVisBdd = shuffle . S.toList . S.filter (wPosVisible $ visible bd) .
+    newVisBdd = (sortOn' (negate . pdist) <$>) . shuffle . S.toList . S.filter (wPosVisible $ visible bd) .
              S.filter ((== Just UnseenBoundary) . (exits bd M.!?)) $ boundaryWPoss
     set :: P.WPos -> M.Map P.WPos Exit -> M.Map P.WPos Exit
     set wp exs = M.insert wp ex exs where
@@ -250,6 +263,9 @@ seeBoundary hasKey bd = do
             isKeyExit (KeyExit _) = True
             isKeyExit _           = False
         posOfBoundary wp' = P.posInDir wp' (P.negDir $ P.exitDir wp')
+    pdist :: P.WPos -> Int
+    pdist | ppos:_ <- playerPoss bd = P.distSquaredToWPos ppos
+        | otherwise = const 0
 
 
 fov, playerFov :: Board -> S.Set P.Pos
