@@ -6,7 +6,7 @@ data Item
     = Gem
     | ScoreTreasure
     | Junk
-    | UmbrellaHandle P.Dir
+    | UmbrellaHandle P.Dir Int
     | CameraBoxed
     | Potion
     | MiniPotion
@@ -17,7 +17,7 @@ data Item
 data InvItem
     = Cloak
     | Orb
-    | Umbrella
+    | Umbrella Int
     | Balloon Int
     | Flash
     | Camera Int
@@ -25,16 +25,17 @@ data InvItem
     | Spraypaint Int
     deriving (Eq, Ord, Show, Read)
 
-initCameraCharge, initBalloonCharges, initSpraypaintCharges :: Int
+initCameraCharge, initBalloonCharges, initSpraypaintCharges, initUmbrellaCharges :: Int
 initCameraCharge = 10
 initBalloonCharges = 3
 initSpraypaintCharges = 5
+initUmbrellaCharges = 8
 
 findableTreasures :: [Item]
 findableTreasures =
     [ ItemInvItem Cloak
     , ItemInvItem Orb
-    , ItemInvItem Umbrella
+    , ItemInvItem (Umbrella initUmbrellaCharges)
     , ItemInvItem (Balloon initBalloonCharges)
     , ItemInvItem Flash
     , ItemInvItem Tent

@@ -50,7 +50,7 @@ invItemGlyph e = Glyph c $ CStyle cyan True where
     c = case e of
         Orb          -> 'o'
         Cloak        -> '['
-        Umbrella     -> '/'
+        Umbrella _   -> '/'
         Balloon _    -> '&'
         Flash        -> '='
         Camera _     -> ')'
@@ -203,7 +203,7 @@ itemGlyph Potion           = Glyph '!' $ CStyle green True
 itemGlyph MiniPotion           = Glyph '!' $ CStyle green False
 itemGlyph ScoreTreasure      = Glyph '~' scoreStyle
 itemGlyph Junk      = Glyph '%' junkStyle
-itemGlyph (UmbrellaHandle d)           = Glyph (if d `elem` [P.DUp, P.DDown] then '|' else '-') $ CStyle magenta True
+itemGlyph (UmbrellaHandle d ch)           = Glyph (if d `elem` [P.DUp, P.DDown] then '|' else '-') $ CStyle magenta (ch > 0)
 itemGlyph CameraBoxed           = Glyph ')' $ CStyle cyan False
 itemGlyph (RollingOrb _ _)           = Glyph 'o' $ CStyle cyan False
 itemGlyph (ItemInvItem e) = invItemGlyph e

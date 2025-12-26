@@ -453,12 +453,12 @@ collectItemsAt :: P.Pos -> Board -> Writer [Item] Board
 collectItemsAt p bd
     | Just item <- items bd M.!? p = let
         takeUmbrella
-            | UmbrellaHandle d <- item =
+            | UmbrellaHandle d _ <- item =
                 let wp' = P.wposInDir p d
                 in modTagged (S.delete wp') . modWalls (M.delete wp')
             | otherwise = id
         getItem
-            | UmbrellaHandle d <- item = P.wposInDir p d `M.member` walls bd
+            | UmbrellaHandle d _ <- item = P.wposInDir p d `M.member` walls bd
             | otherwise = True
         in do
             when getItem $ tell [item]
@@ -562,7 +562,7 @@ tryUseInvItem e d bd
         lift . guard $ inBounds p'
         case e of
             Cloak -> pure $ modWalls (M.insert wp $ CloakWall d 1) bd
-            Umbrella -> do
+            Umbrella charges -> do
                 guard . M.notMember p' $ items bd
                 let wp' = P.wposInDir p' d
                 guard $ inBoundsW wp'
@@ -573,7 +573,7 @@ tryUseInvItem e d bd
                         let (bd', mr) = runWriter $ tryMoveCreature d p' bd
                         guard . getAny $ someAction mr
                         pure $ addUmbrellaWall bd'
-                    else pure . modItems (M.insert p' $ UmbrellaHandle d) . addUmbrellaWall $ bd
+                    else pure . modItems (M.insert p' . UmbrellaHandle d $ charges - 1) . addUmbrellaWall $ bd
             Balloon charges -> let inflate = modCreatures (M.insert p' (InflatedBalloon $ charges - 1))
                 in if p' `M.member` creatures bd
                     then do
