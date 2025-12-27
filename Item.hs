@@ -1,9 +1,10 @@
 module Item where
 
-import qualified Pos as P
+import qualified Pos   as P
+import           Power (PowerType)
 
 data Item
-    = Gem
+    = Gem PowerType
     | ScoreTreasure
     | Junk
     | UmbrellaHandle P.Dir Int

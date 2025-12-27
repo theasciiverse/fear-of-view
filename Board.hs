@@ -160,9 +160,24 @@ setPlayerDead = modCreatures . M.map $ \case
     Player -> DeadPlayer
     c      -> c
 
+powerTypeAt :: P.Pos -> Pow.PowerType
+powerTypeAt (P.Pos x y)
+    | 2*x > w = powerTypeAt (P.Pos (w-1-x) y)
+    | 2*y > h = powerTypeAt (P.Pos x (h-1-y))
+powerTypeAt (P.Pos 0 0) = Pow.Smoke
+powerTypeAt (P.Pos 0 1) = Pow.Dazzle
+powerTypeAt (P.Pos 0 2) = Pow.Teleport
+powerTypeAt (P.Pos 1 0) = Pow.Ghost
+powerTypeAt (P.Pos 1 1) = Pow.Heal
+powerTypeAt (P.Pos 1 2) = Pow.Haste
+powerTypeAt (P.Pos 2 0) = Pow.Teleport
+powerTypeAt (P.Pos 2 1) = Pow.Foresight
+powerTypeAt (P.Pos 2 2) = Pow.Undo
+powerTypeAt _ = Pow.Heal -- impossible
+
 treasureAt :: Board -> P.Pos -> Item
-treasureAt bd (P.Pos x y)
-    | treasures bd == 1 = Gem
+treasureAt bd p@(P.Pos x y)
+    | treasures bd == 1 = Gem $ powerTypeAt p
     | 2*x > w = treasureAt bd (P.Pos (w-1-x) y)
     | 2*y > h = treasureAt bd (P.Pos x (h-1-y))
 treasureAt _ (P.Pos 2 2) = Junk
@@ -671,18 +686,5 @@ addPower overUsable bd
     | p:_ <- playerPoss bd = modPowers (M.alter (add p) p) bd
     | otherwise = bd
     where
-    add p Nothing    = Just . Pow.upgrade $ Pow.new (typeAt p) overUsable
+    add p Nothing    = Just . Pow.upgrade $ Pow.new (powerTypeAt p) overUsable
     add _ (Just pow) = Just $ Pow.upgrade pow
-    typeAt (P.Pos x y)
-        | 2*x > w = typeAt (P.Pos (w-1-x) y)
-        | 2*y > h = typeAt (P.Pos x (h-1-y))
-    typeAt (P.Pos 0 0) = Pow.Smoke
-    typeAt (P.Pos 0 1) = Pow.Dazzle
-    typeAt (P.Pos 0 2) = Pow.Teleport
-    typeAt (P.Pos 1 0) = Pow.Ghost
-    typeAt (P.Pos 1 1) = Pow.Heal
-    typeAt (P.Pos 1 2) = Pow.Haste
-    typeAt (P.Pos 2 0) = Pow.Teleport
-    typeAt (P.Pos 2 1) = Pow.Foresight
-    typeAt (P.Pos 2 2) = Pow.Undo
-    typeAt _ = Pow.Heal -- impossible

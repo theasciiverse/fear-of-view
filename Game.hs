@@ -251,7 +251,7 @@ addJunk = do
 
 collect :: MonadState Game m => [Item] -> m ()
 collect = mapM_ collect' where
-    collect' Gem                = modify . modBoard . B.addPower =<< gets (hasEquip Siphon)
+    collect' (Gem _)            = modify . modBoard . B.addPower =<< gets (hasEquip Siphon)
     collect' ScoreTreasure           = modify $ modScoreWithMax (+1)
     collect' Potion           = modify $ modLifeWithMax (+4)
     collect' Junk             = addJunk
@@ -439,11 +439,12 @@ triggeredBeats game = S.unions . S.map triggered $ unseenBeats game where
         = S.singleton $ T.Trapped p
     triggered T.TSeeMonster = uncurry T.SeeMonster `S.map` (S.fromList . M.assocs . M.filter isMonster $ B.creatures bd)
     triggered T.TSeeExit = T.SeeExit `S.map` M.keysSet (M.filter (== Exit True) $ B.exits bd)
-    triggered T.TSeeItem = uncurry T.SeeItem `S.map` (S.fromList . M.assocs . M.filter (`notElem` [Potion, ScoreTreasure, Junk, Gem]) $ B.items bd)
+    triggered T.TSeeItem = uncurry T.SeeItem `S.map` (S.fromList . M.assocs . M.filter
+        (\case {Potion -> False; ScoreTreasure -> False; Junk -> False; Gem _ -> False; _ -> True}) $ B.items bd)
     triggered T.TSeePotion = T.SeePotion `S.map` M.keysSet (M.filter (== Potion) $ B.items bd)
     triggered T.TSeeScore = T.SeeScore `S.map` M.keysSet (M.filter (== ScoreTreasure) $ B.items bd)
     triggered T.TSeeJunk = T.SeeJunk `S.map` M.keysSet (M.filter (== Junk) $ B.items bd)
-    triggered T.TSeeGem = T.SeeGem `S.map` M.keysSet (M.filter (== Gem) $ B.items bd)
+    triggered T.TSeeGem = T.SeeGem `S.map` M.keysSet (M.filter (\case {Gem _ -> True; _ -> False}) $ B.items bd)
     triggered T.THurt | life game < maxLife game = sng $ T.Hurt (life game) (maxLife game)
     triggered T.TCollectItem | 1 `M.member` I.invItems (inventory game) = sng T.CollectItem
     triggered T.TCollectItem2 | 1 `M.member` I.invItems (inventory game) = sng T.CollectItem2

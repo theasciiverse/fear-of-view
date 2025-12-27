@@ -198,14 +198,22 @@ creatureGlyph FastMonster     = Glyph 'f' $ CStyle magenta True
 creatureGlyph (InflatedBalloon charges) = Glyph '0' . CStyle magenta $ charges > 0
 
 itemGlyph :: Item -> Glyph
-itemGlyph Gem           = Glyph '*' $ CStyle green True
-itemGlyph Potion           = Glyph '!' $ CStyle green True
-itemGlyph ScoreTreasure      = Glyph '~' scoreStyle
-itemGlyph Junk      = Glyph '%' junkStyle
-itemGlyph (UmbrellaHandle d ch)           = Glyph (if d `elem` [P.DUp, P.DDown] then '|' else '-') $ CStyle magenta (ch > 0)
+itemGlyph (Gem pow)             = Glyph '*' $ case pow of
+    Pow.Heal      -> CStyle green True
+    Pow.Dazzle    -> CStyle cyan True
+    Pow.Smoke     -> CStyle blue True
+    Pow.Haste     -> CStyle yellow True
+    Pow.Teleport  -> CStyle green False
+    Pow.Undo      -> CStyle magenta True
+    Pow.Ghost     -> CStyle white False
+    Pow.Foresight -> CStyle white True
+itemGlyph Potion                = Glyph '!' $ CStyle green True
+itemGlyph ScoreTreasure         = Glyph '~' scoreStyle
+itemGlyph Junk                  = Glyph '%' junkStyle
+itemGlyph (UmbrellaHandle d ch) = Glyph (if d `elem` [P.DUp, P.DDown] then '|' else '-') $ CStyle magenta (ch > 0)
 itemGlyph CameraBoxed           = Glyph ')' $ CStyle cyan False
-itemGlyph (RollingOrb _ _)           = Glyph 'o' $ CStyle cyan False
-itemGlyph (ItemInvItem e) = invItemGlyph e
+itemGlyph (RollingOrb _ _)      = Glyph 'o' $ CStyle cyan False
+itemGlyph (ItemInvItem e)       = invItemGlyph e
 
 wallGlyphVert :: Wall -> Glyph
 wallGlyphVert = \case
@@ -568,7 +576,7 @@ tutBox = tutBox' where
     tutBox' (T.SeePotion p) = Just (boardOffset <> posCPosR p, [itemGlyph Potion])
     tutBox' (T.SeeScore p) = Just (boardOffset <> posCPosR p, [itemGlyph ScoreTreasure])
     tutBox' (T.SeeJunk p) = Just (boardOffset <> posCPosR p, [itemGlyph Junk])
-    tutBox' (T.SeeGem p) = Just (boardOffset <> posCPosR p, [itemGlyph Gem])
+    tutBox' (T.SeeGem p) = Just (boardOffset <> posCPosR p, [itemGlyph . Gem $ B.powerTypeAt p])
     tutBox' T.CollectItem = Just (invOffset <> CP.CPos 0 1, [char '1'])
     tutBox' T.CollectGem = Just (invOffset <> CP.CPos 0 10, [Glyph '0' $ CStyle red True])
     tutBox' T.CollectScore = Just (statusOffset <> CP.CPos 20 1, (char <$> (" 1/" <> show G.maxScore)) <> [Glyph '~' scoreStyle])
