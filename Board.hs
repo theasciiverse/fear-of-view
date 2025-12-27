@@ -272,10 +272,7 @@ seeBoundary hasKey bd = do
             | otherwise = SeenBoundary
         unseen = S.filter ((== Just UnseenBoundary) . (exs M.!?)) boundaryWPoss
         sameWall = (==) `on` P.exitDir
-        needKeyExit = hasKey && not (any isKeyExit $ M.elems exs)
-            where
-            isKeyExit (KeyExit _) = True
-            isKeyExit _           = False
+        needKeyExit = hasKey && not (any (\case {KeyExit _ -> True; _ -> False}) $ M.elems exs)
         posOfBoundary wp' = P.posInDir wp' (P.negDir $ P.exitDir wp')
     pdist :: P.WPos -> Int
     pdist | ppos:_ <- playerPoss bd = P.distSquaredToWPos ppos
@@ -641,9 +638,8 @@ doPhysics bd0
     . tickTimer
     <$> rollOrbs bd0
     where
-    decayCloaks bd = foldr decayCloakWall bd . M.assocs . M.filter isCloakWall $ walls bd
-    isCloakWall (CloakWall _ _) = True
-    isCloakWall _               = False
+    decayCloaks bd = foldr decayCloakWall bd . M.assocs
+        . M.filter (\case {CloakWall _ _ -> True; _ -> False}) $ walls bd
     decayCloakWall :: (P.WPos, Wall) -> Board -> Board
     decayCloakWall (wp, CloakWall d n)
         | n > 0 = modWalls . M.insert wp $ CloakWall d (n-1)
