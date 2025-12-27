@@ -200,7 +200,6 @@ creatureGlyph (InflatedBalloon charges) = Glyph '0' . CStyle magenta $ charges >
 itemGlyph :: Item -> Glyph
 itemGlyph Gem           = Glyph '*' $ CStyle green True
 itemGlyph Potion           = Glyph '!' $ CStyle green True
-itemGlyph MiniPotion           = Glyph '!' $ CStyle green False
 itemGlyph ScoreTreasure      = Glyph '~' scoreStyle
 itemGlyph Junk      = Glyph '%' junkStyle
 itemGlyph (UmbrellaHandle d ch)           = Glyph (if d `elem` [P.DUp, P.DDown] then '|' else '-') $ CStyle magenta (ch > 0)
@@ -567,7 +566,6 @@ tutBox = tutBox' where
     tutBox' (T.SeeExit wp) = Just (boardOffset <> wposCPos wp, [bold . exitChar True $ P.exitDir wp])
     tutBox' (T.SeeItem p i) = Just (boardOffset <> posCPosR p, [itemGlyph i])
     tutBox' (T.SeePotion p) = Just (boardOffset <> posCPosR p, [itemGlyph Potion])
-    tutBox' (T.SeeMiniPotion p) = Just (boardOffset <> posCPosR p, [itemGlyph MiniPotion])
     tutBox' (T.SeeScore p) = Just (boardOffset <> posCPosR p, [itemGlyph ScoreTreasure])
     tutBox' (T.SeeJunk p) = Just (boardOffset <> posCPosR p, [itemGlyph Junk])
     tutBox' (T.SeeGem p) = Just (boardOffset <> posCPosR p, [itemGlyph Gem])

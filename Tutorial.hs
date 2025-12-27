@@ -18,7 +18,6 @@ data Beat
     | SeeMonster P.Pos Creature
     | SeeItem P.Pos Item
     | SeePotion P.Pos
-    | SeeMiniPotion P.Pos
     | SeeScore P.Pos
     | SeeJunk P.Pos
     | SeeGem P.Pos
@@ -37,7 +36,6 @@ data Type
     | TSeeExit
     | TSeeItem
     | TSeePotion
-    | TSeeMiniPotion
     | TSeeScore
     | TSeeJunk
     | TSeeGem
@@ -52,26 +50,25 @@ data Type
     deriving (Eq, Ord, Enum, Bounded, Show)
 
 tp :: Beat -> Type
-tp Meta              = TMeta
-tp Meta2             = TMeta2
-tp (Movement _)      = TMovement
-tp (Trapped _)       = TTrapped
-tp (SeeMonster _ _)  = TSeeMonster
-tp (SeeExit _)       = TSeeExit
-tp (SeeItem _ _)     = TSeeItem
-tp (SeePotion _)     = TSeePotion
-tp (SeeMiniPotion _) = TSeeMiniPotion
-tp (SeeScore _)      = TSeeScore
-tp (SeeJunk _)       = TSeeJunk
-tp (SeeGem _)        = TSeeGem
-tp MustBreak         = TMustBreak
-tp CollectItem       = TCollectItem
-tp CollectItem2      = TCollectItem2
-tp CollectGem        = TCollectGem
-tp CollectScore      = TCollectScore
-tp (Hurt _ _)        = THurt
-tp Timer             = TTimer
-tp TutEnd            = TTutEnd
+tp Meta             = TMeta
+tp Meta2            = TMeta2
+tp (Movement _)     = TMovement
+tp (Trapped _)      = TTrapped
+tp (SeeMonster _ _) = TSeeMonster
+tp (SeeExit _)      = TSeeExit
+tp (SeeItem _ _)    = TSeeItem
+tp (SeePotion _)    = TSeePotion
+tp (SeeScore _)     = TSeeScore
+tp (SeeJunk _)      = TSeeJunk
+tp (SeeGem _)       = TSeeGem
+tp MustBreak        = TMustBreak
+tp CollectItem      = TCollectItem
+tp CollectItem2     = TCollectItem2
+tp CollectGem       = TCollectGem
+tp CollectScore     = TCollectScore
+tp (Hurt _ _)       = THurt
+tp Timer            = TTimer
+tp TutEnd           = TTutEnd
 
 allTypes :: [Type]
 allTypes = [minBound..maxBound]
@@ -98,9 +95,7 @@ text = text' . tp
     text' TSeeItem =
         "Why are things always in the last place you look?"
     text' TSeePotion =
-        "That looks very refreshing."
-    text' TSeeMiniPotion =
-        "That looks quite refreshing."
+        "That looks refreshing."
     text' TSeeScore =
         "This is just what you're looking for."
     text' TSeeJunk =

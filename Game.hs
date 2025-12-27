@@ -213,7 +213,7 @@ nextRound = do
     charmed <- gets $ hasEquip Charm
     let l = initLife + if charmed then charmBonus else 0
     modify $ setLife l . setMaxLife l
-    modify . setRoundItems =<< evalR (take 3 <$> shuffle findableTreasures)
+    modify . setRoundItems =<< evalR (take 4 <$> shuffle findableTreasures)
     enterNewBoard True =<< evalR (randMemberUnsafe B.boundaryWPoss)
     endTurn
 
@@ -254,7 +254,6 @@ collect = mapM_ collect' where
     collect' Gem                = modify . modBoard . B.addPower =<< gets (hasEquip Siphon)
     collect' ScoreTreasure           = modify $ modScoreWithMax (+1)
     collect' Potion           = modify $ modLifeWithMax (+4)
-    collect' MiniPotion           = modify $ modLifeWithMax (+2)
     collect' Junk             = addJunk
     collect' (UmbrellaHandle _ 0) = pure ()
     collect' (UmbrellaHandle _ charges) = collect' (ItemInvItem $ Umbrella charges)
@@ -440,9 +439,8 @@ triggeredBeats game = S.unions . S.map triggered $ unseenBeats game where
         = S.singleton $ T.Trapped p
     triggered T.TSeeMonster = uncurry T.SeeMonster `S.map` (S.fromList . M.assocs . M.filter isMonster $ B.creatures bd)
     triggered T.TSeeExit = T.SeeExit `S.map` M.keysSet (M.filter (== Exit True) $ B.exits bd)
-    triggered T.TSeeItem = uncurry T.SeeItem `S.map` (S.fromList . M.assocs . M.filter (`notElem` [Potion, MiniPotion, ScoreTreasure, Junk, Gem]) $ B.items bd)
+    triggered T.TSeeItem = uncurry T.SeeItem `S.map` (S.fromList . M.assocs . M.filter (`notElem` [Potion, ScoreTreasure, Junk, Gem]) $ B.items bd)
     triggered T.TSeePotion = T.SeePotion `S.map` M.keysSet (M.filter (== Potion) $ B.items bd)
-    triggered T.TSeeMiniPotion = T.SeeMiniPotion `S.map` M.keysSet (M.filter (== MiniPotion) $ B.items bd)
     triggered T.TSeeScore = T.SeeScore `S.map` M.keysSet (M.filter (== ScoreTreasure) $ B.items bd)
     triggered T.TSeeJunk = T.SeeJunk `S.map` M.keysSet (M.filter (== Junk) $ B.items bd)
     triggered T.TSeeGem = T.SeeGem `S.map` M.keysSet (M.filter (== Gem) $ B.items bd)

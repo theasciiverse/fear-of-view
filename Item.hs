@@ -9,7 +9,6 @@ data Item
     | UmbrellaHandle P.Dir Int
     | CameraBoxed
     | Potion
-    | MiniPotion
     | RollingOrb { orbRollDir :: P.Dir, orbJustDropped :: Bool }
     | ItemInvItem InvItem
     deriving (Eq, Ord)

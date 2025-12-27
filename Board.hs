@@ -167,7 +167,6 @@ treasureAt bd (P.Pos x y)
     | 2*y > h = treasureAt bd (P.Pos x (h-1-y))
 treasureAt _ (P.Pos 2 2) = Junk
 treasureAt _ (P.Pos 1 1) = Potion
-treasureAt _ (P.Pos 0 2) = MiniPotion
 treasureAt bd (P.Pos 1 0) | Just i <- headMay $ possItems bd = i
 treasureAt bd (P.Pos 0 y) | Just i <- possItems bd `atMay` (y+1) = i
 treasureAt bd (P.Pos 2 0) = treasureAt bd $ P.Pos 0 2
