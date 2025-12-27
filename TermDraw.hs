@@ -392,11 +392,11 @@ drawInv sel preserve highlightEmpty (I.Inventory inv) pow = do
         ]
 
 equipStyle :: Equipment -> CStyle
-equipStyle Bag      = CStyle yellow False
-equipStyle Charm    = CStyle green True
-equipStyle GrabHand = CStyle red False
-equipStyle Key      = CStyle blue True
-equipStyle Siphon   = CStyle yellow True
+equipStyle Bag    = CStyle yellow False
+equipStyle Charm  = CStyle green True
+equipStyle Broom  = CStyle red False
+equipStyle Key    = CStyle blue True
+equipStyle Siphon = CStyle yellow True
 
 drawEquip :: TM.TermM m => S.Set Equipment -> m ()
 drawEquip es | S.null es = pure ()
