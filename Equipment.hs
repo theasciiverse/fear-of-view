@@ -3,7 +3,7 @@ module Equipment where
 data Equipment
     = Bag
     | Charm
-    | Broom
+    | Hook
     | Key
     | Siphon
     deriving (Eq, Ord, Show, Enum, Bounded)

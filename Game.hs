@@ -162,7 +162,7 @@ preserveSlots game
     | otherwise = 0
 
 canGrab :: Game -> Bool
-canGrab = hasEquip Broom
+canGrab = hasEquip Hook
 
 highscore :: Maybe HS.Username -> Game -> HS.Highscore
 highscore name game = HS.Highscore

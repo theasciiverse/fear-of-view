@@ -401,7 +401,7 @@ drawInv sel preserve highlightEmpty (I.Inventory inv) pow = do
 equipStyle :: Equipment -> CStyle
 equipStyle Bag    = CStyle yellow False
 equipStyle Charm  = CStyle green True
-equipStyle Broom  = CStyle red False
+equipStyle Hook   = CStyle red False
 equipStyle Key    = CStyle blue True
 equipStyle Siphon = CStyle yellow True
 
