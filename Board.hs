@@ -297,7 +297,7 @@ playerFov bd = S.unions . map (fovAt bd) $ playerPoss bd
 
 
 playerPoss :: Board -> [ P.Pos ]
-playerPoss bd = [ p | (p,Player) <- M.assocs $ creatures bd ]
+playerPoss bd = [ p | (p,c) <- M.assocs $ creatures bd, c `elem` [Player, DeadPlayer] ]
 
 cameraPoss :: Board -> [ P.Pos ]
 cameraPoss bd = [ p | (p, ItemInvItem (Camera _)) <- M.assocs $ items bd ]
@@ -684,3 +684,13 @@ addPower overUsable bd
     where
     add p Nothing    = Just . Pow.upgrade $ Pow.new (powerTypeAt p) overUsable
     add _ (Just pow) = Just $ Pow.upgrade pow
+
+canUndo :: Board -> Bool
+canUndo bd
+    | Just c <- creatures bd M.!? undoPos
+    , c `elem` [Player, DeadPlayer]
+    , Just pow <- powers bd M.!? undoPos
+    = Pow.activatableTimes pow > 0
+    | otherwise = False
+    where
+    undoPos = P.Pos 2 2

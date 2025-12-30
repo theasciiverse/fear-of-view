@@ -386,47 +386,49 @@ data PlayState = Playing | Dead | RoundEnded | Won | Tutorialising T.Beat derivi
 playState :: Game -> PlayState
 playState game
     | level game == 0 = RoundEnded
-    | life game <= 0 = Dead
+    | life game <= 0 && not (B.canUndo $ board game) = Dead
     | score game >= maxScore = Won
     | Just b <- S.lookupMin $ triggeredBeats game = Tutorialising b
     | otherwise = Playing
 
 doCommand :: (MonadState Game m, MonadIO m) => C.Command -> m ()
-doCommand c = gets playState >>= \case
-    Dead -> case c of
-        C.Accept -> initGame
-        _        -> pure ()
-    Won -> case c of
-        C.Accept -> initGame
-        _        -> pure ()
-    RoundEnded -> case c of
-        C.Accept -> nextRound
-        C.SkipTutorial -> modify (setUnseenBeats $ S.fromList T.allTypes) >> nextRound
-        _        -> pure ()
-    Tutorialising b -> case c of
-        C.Accept       -> modify . modUnseenBeats . S.delete $ T.tp b
-        C.SkipTutorial -> modify $ setUnseenBeats S.empty
-        _              -> pure ()
-    Playing -> case c of
-        C.Dir dir -> do
-            gets selectedSlot >>= \case
-                Nothing -> movePlayer dir
-                Just slot -> do
-                    modify $ setSelectedSlot Nothing
-                    useInvSlotInDir slot dir
-        C.UseInv slot -> do
-            gets selectedSlot >>= modify . \case
-                Just s | s == slot -> setSelectedSlot Nothing
-                Just s' -> modInventory (I.swap slot s') . setSelectedSlot Nothing
-                Nothing -> setSelectedSlot $ Just slot
-        C.UsePower -> activatePower
+doCommand c = do
+    onlyUndo <- gets $ \game -> life game <= 0 && B.canUndo (board game)
+    gets playState >>= \case
+        Dead -> case c of
+            C.Accept -> initGame
+            _        -> pure ()
+        Won -> case c of
+            C.Accept -> initGame
+            _        -> pure ()
+        RoundEnded -> case c of
+            C.Accept -> nextRound
+            C.SkipTutorial -> modify (setUnseenBeats $ S.fromList T.allTypes) >> nextRound
+            _        -> pure ()
+        Tutorialising b -> case c of
+            C.Accept       -> modify . modUnseenBeats . S.delete $ T.tp b
+            C.SkipTutorial -> modify $ setUnseenBeats S.empty
+            _              -> pure ()
+        Playing -> case c of
+            C.Dir dir | not onlyUndo -> do
+                gets selectedSlot >>= \case
+                    Nothing -> movePlayer dir
+                    Just slot -> do
+                        modify $ setSelectedSlot Nothing
+                        useInvSlotInDir slot dir
+            C.UseInv slot | not onlyUndo -> do
+                gets selectedSlot >>= modify . \case
+                    Just s | s == slot -> setSelectedSlot Nothing
+                    Just s' -> modInventory (I.swap slot s') . setSelectedSlot Nothing
+                    Nothing -> setSelectedSlot $ Just slot
+            C.UsePower -> activatePower
 #ifdef DEBUG
-        C.DebugAddPower -> modify . modBoard . B.addPower =<< gets (hasEquip Siphon)
-        C.DebugAddJunk -> addJunk
-        C.DebugAddItems -> collect findableTreasures
-        C.DebugExit -> exitLevel =<< evalR (randElemUnsafe $ S.toList B.boundaryWPoss)
+            C.DebugAddPower -> modify . modBoard . B.addPower =<< gets (hasEquip Siphon)
+            C.DebugAddJunk -> addJunk
+            C.DebugAddItems -> collect findableTreasures
+            C.DebugExit -> exitLevel =<< evalR (randElemUnsafe $ S.toList B.boundaryWPoss)
 #endif
-        _ -> pure ()
+            _ -> pure ()
 
 triggeredBeats :: Game -> S.Set T.Beat
 triggeredBeats game = S.unions . S.map triggered $ unseenBeats game where
