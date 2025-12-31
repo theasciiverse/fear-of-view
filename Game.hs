@@ -438,6 +438,7 @@ triggeredBeats game = S.unions . S.map triggered $ unseenBeats game where
     triggered T.TTrapped | p:_ <- B.playerPoss bd
         , all (trappedDir p) P.dirs
         , any ((`M.member` B.walls bd) . P.wposInDir p) P.dirs
+        , not $ any ((\case {Just (Exit _) -> True; _ -> False}) . (B.exits bd M.!?) . P.wposInDir p) P.dirs
         = S.singleton $ T.Trapped p
     triggered T.TSeeMonster = uncurry T.SeeMonster `S.map` (S.fromList . M.assocs . M.filter isMonster $ B.creatures bd)
     triggered T.TSeeExit = T.SeeExit `S.map` M.keysSet (M.filter (== Exit True) $ B.exits bd)
