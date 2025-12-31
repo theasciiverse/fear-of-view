@@ -75,7 +75,7 @@ data Board = Board
     , walls      :: M.Map P.WPos Wall
     , exits      :: M.Map P.WPos Exit
     , powers     :: M.Map P.Pos Pow.Power
-    , treasures  :: Int
+    , found      :: [Item]
     , timer      :: Int
     , possItems  :: [Item]
     , safe       :: Bool
@@ -87,7 +87,7 @@ data Board = Board
     }
 
 new :: BC.BoardConf -> Board
-new = Board S.empty poss M.empty M.empty M.empty initBoundary M.empty treasuresPerBoard 0 [] True M.empty M.empty S.empty M.empty where
+new = Board S.empty poss M.empty M.empty M.empty initBoundary M.empty [] 0 [] True M.empty M.empty S.empty M.empty where
      initBoundary = M.fromSet (const UnseenBoundary) boundaryWPoss
 
 empty :: Board
@@ -118,11 +118,13 @@ modExits f bd = bd { exits = f $ exits bd }
 modPowers :: (M.Map P.Pos Pow.Power -> M.Map P.Pos Pow.Power) -> Board -> Board
 modPowers f bd = bd { powers = f $ powers bd }
 
-modTreasures, modTimer :: (Int -> Int) -> Board -> Board
-modTreasures f bd = bd { treasures = f $ treasures bd }
+modTimer :: (Int -> Int) -> Board -> Board
 modTimer f bd = bd { timer = f $ timer bd }
 setTimer :: Int -> Board -> Board
 setTimer = modTimer . const
+
+modFound :: ([Item] -> [Item]) -> Board -> Board
+modFound f bd = bd { found = f $ found bd }
 
 setSafe :: Bool -> Board -> Board
 setSafe s bd = bd { safe = s }
@@ -151,9 +153,12 @@ invisibleWPoss tags vis = S.filter (not . wPosVisible vis) wPoss S.\\ tags
 invisible :: Board -> S.Set P.Pos
 invisible bd = poss S.\\ visible bd
 
-onSpawnTreasure :: Board -> Board
-onSpawnTreasure bd = (if treasures bd > 1 then setUnrevealed poss else id)
-    $ modTreasures (+ (-1)) bd
+treasuresLeft :: Board -> Int
+treasuresLeft bd = treasuresPerBoard - length (found bd)
+
+onSpawnTreasure :: Item -> Board -> Board
+onSpawnTreasure tr bd = (if treasuresLeft bd > 1 then setUnrevealed poss else id)
+    $ modFound (<>[tr]) bd
 
 setPlayerDead :: Board -> Board
 setPlayerDead = modCreatures . M.map $ \case
@@ -177,7 +182,7 @@ powerTypeAt _ = Pow.Heal -- impossible
 
 treasureAt :: Board -> P.Pos -> Item
 treasureAt bd p@(P.Pos x y)
-    | treasures bd == 1 = Gem $ powerTypeAt p
+    | treasuresLeft bd == 1 = Gem $ powerTypeAt p
     | 2*x > w = treasureAt bd (P.Pos (w-1-x) y)
     | 2*y > h = treasureAt bd (P.Pos x (h-1-y))
 treasureAt _ (P.Pos 2 2) = Junk
@@ -230,8 +235,9 @@ setFov hasKey bd0 = setSafe False <$> iter bd0 where
     createW :: Board -> P.WPos -> Rand StdGen Board
     createP bd p = modExpected (M.delete p) <$> createP' (modUnrevealed (S.delete p) bd) p
     createP' bd p
-        | S.null (unrevealed bd) && treasures bd > 0 =
-            pure . onSpawnTreasure . modItems (M.insert p $ treasureAt bd p) $ bd
+        | S.null (unrevealed bd) && treasuresLeft bd > 0 =
+            let treasure = treasureAt bd p
+            in pure . onSpawnTreasure treasure . modItems (M.insert p treasure) $ bd
         | safe bd = pure bd
         | p `M.member` creatures bd = pure bd
         | expectant bd = pure $ case expected bd M.!? p of
@@ -247,7 +253,7 @@ setFov hasKey bd0 = setSafe False <$> iter bd0 where
             maybe bd (($ bd) . modWalls . M.insert wp) <$> RF.roll (BC.wallRoll bc)
     revealVis bd
         -- | Needed when all poss revealed on spawning treasure
-        | S.null (unrevealed bd) && treasures bd > 0 = setUnrevealed (poss `S.difference` visible bd) bd
+        | S.null (unrevealed bd) && treasuresLeft bd > 0 = setUnrevealed (poss `S.difference` visible bd) bd
         -- | Needed only when we created a treasure
         | otherwise = modUnrevealed (`S.difference` visible bd) bd
     pdist :: P.Pos -> Int
@@ -599,12 +605,14 @@ tryUseInvItem e d bd
                     delPoss = flip (foldr M.delete) flashPoss
                     delWPoss = flip (foldr M.delete) flashWPoss
                     delWPossS = flip (foldr S.delete) flashWPoss
+                    newUnrevealed bd' = unrevealed bd' `S.difference` flashPoss
                     reveal, destroyTreasure :: Board -> Board
-                    reveal = destroyTreasure
-                        . modUnrevealed (`S.difference` flashPoss)
-                        . modVisible (`S.union` flashPoss)
-                    -- | Pretend we created and immediately destroyed a treasure
-                    destroyTreasure bd' | null (unrevealed bd') = onSpawnTreasure bd'
+                    reveal = modUnrevealed (`S.difference` flashPoss) . destroyTreasure . modVisible (`S.union` flashPoss)
+                    -- | Pretend we created and immediately destroyed a treasure on flashing all unrevealed
+                    destroyTreasure bd'
+                        | null $ newUnrevealed bd'
+                        , trPos:_ <- sortOn' (negate . P.distSquared p) . S.toList $ unrevealed bd'
+                        = onSpawnTreasure (treasureAt bd' trPos) bd'
                         | otherwise = bd'
                 in tell [AlertHighlight flashPoss flashWPoss] $>
                     (reveal . modItems delPoss . modCreatures delPoss . modTagged delWPossS $ modWalls delWPoss bd)

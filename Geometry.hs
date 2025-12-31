@@ -23,8 +23,8 @@ geometry :: M.Map Window WinDim
 geometry = M.fromList
     [ (StatusWin, WinDim 0 0 scrW 2)
     , (BoardWin, WinDim 1 3 (bdcW+1) bdcH)
-    , (InvWin, WinDim (1+bdcW+3) 3 20 (3 + length I.slots))
-    , (EquipWin, WinDim (1+bdcW+3+20) 3 15 (3 + length I.slots))
+    , (InvWin, WinDim (1+bdcW+3) 3 20 (4 + length I.slots))
+    , (EquipWin, WinDim (1+bdcW+3+20) 3 15 (4 + length I.slots))
     , (LevelInfoWin, WinDim 1 (1 + afterBoard) scrW 3)
     , (MessageWin, WinDim 0 (1 + 3 + 1 + afterBoard) scrW 1)
     , (MainWin, WinDim 0 0 scrW scrH)

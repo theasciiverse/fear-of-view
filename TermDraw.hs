@@ -431,6 +431,7 @@ drawLevelInfo bd = do
     drawRoll 0 (BC.creatureRoll bc) G.initCreatureSides creatureGlyph
     drawRoll 1 (BC.wallRoll bc) G.initWallSides wallGlyphVert
     drawDiffsLine 2
+    drawFound
     where
     win = LevelInfoWin
     nullGlyph = char '-'
@@ -466,6 +467,11 @@ drawLevelInfo bd = do
         exitDirs = exitsWith (Exit True)
         keyExitDirs = exitsWith (KeyExit True)
         possibleExitDirs = exitDirs <> keyExitDirs <> exitsWith UnseenBoundary
+    drawFound = sequence_
+        [ TM.drawGlyph win (CP.CPos (G.initCreatureSides - 3 + n) 1) gl
+        | (n,gl) <- zip [0..] . take B.treasuresPerBoard $
+            (itemGlyph <$> B.found bd) <> repeat (char '?')
+        ]
 
 data HSInfo
     = HSRank Int
