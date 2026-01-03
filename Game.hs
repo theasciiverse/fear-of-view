@@ -301,13 +301,20 @@ showAlerts :: MonadState Game m => B.Board -> [B.Alert] -> m ()
 showAlerts bd alerts = unless (null alerts) $ modify . pushTransition $ B.Transition bd alerts
 
 useInvSlotInDir :: MonadState Game m => I.Slot -> P.Dir -> m ()
-useInvSlotInDir slot dir =
+useInvSlotInDir slot dir = do
+    bd <- gets board
     gets ((M.!? slot) . I.invItems . inventory) >>= \case
         Nothing -> (gets canGrab >>=) . flip when $ do
             is <- modBoardTell (B.grabItem dir)
             unless (null is) $ collect is >> envAct >> endTurn
+        Just e@(Camera _)
+            | p:_ <- B.playerPoss bd
+            , B.creatureCanMove bd Player p dir -> do
+                modify . modBoard . B.modItems . M.insert p $ ItemInvItem e
+                modify . modInventory . I.modInvItems $ useUp slot
+                movePlayer dir
+            | otherwise -> pure ()
         Just e -> do
-            bd <- gets board
             case runWriterT $ B.tryUseInvItem e dir bd of
                 Nothing -> pure ()
                 Just (bd', alerts) -> do

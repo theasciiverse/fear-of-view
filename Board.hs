@@ -624,7 +624,9 @@ tryUseInvItem e d bd
             Spraypaint _ -> do
                 guard $ wp `M.member` walls bd
                 pure $ modTagged (S.insert wp) bd
-            _ -> ($ bd) <$> dropItem p' (ItemInvItem e)
+            Camera _ -> -- handled in Game
+                pure bd
+            -- _ -> ($ bd) <$> dropItem p' (ItemInvItem e)
     | otherwise = lift Nothing
     where
     dropItem p i = do
