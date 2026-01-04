@@ -35,6 +35,7 @@ import           Window
 import qualified Board               as B
 import qualified BoardConf           as BC
 import qualified CPos                as CP
+import qualified Fov                 as F
 import qualified Game                as G
 import qualified Highscore           as HS
 import qualified HighscoreFile       as HSF
@@ -310,7 +311,7 @@ drawAlertedBoard AlertedBoard{ base = bd, creatureMoves = cmvs, itemMoves = imvs
                 | B.hasted bd = yellow
                 | otherwise = white
         creatureGlyph' c = creatureGlyph c
-        obscured = M.fromSet (\p -> (Just . dim $ expectChar p,) . Just . powerBG p . dim $ obsChar p) $ B.poss S.\\ B.visible bd where
+        obscured = M.fromSet (\p -> (Just . dim $ expectChar p,) . Just . powerBG p . dim $ obsChar p) $ B.poss S.\\ F.pFov (B.visible bd) where
             expectChar p
                 | B.preexpectant bd
                 , Just (Just c) <- B.expected bd M.!? p = glyphChar $ creatureGlyph' c
@@ -349,12 +350,13 @@ drawAlertedBoard AlertedBoard{ base = bd, creatureMoves = cmvs, itemMoves = imvs
             wallI TentWall         = Just $ CStyle red True
             exitCol = levBoundSt
             pref a b = minimumBy (compare `on` cstyleCol) [a,b] -- white < green < magenta
-        iObscured = M.fromSet (const $ dim ' ') $ S.filter (\p -> P.x p < B.w-1 && P.y p < B.h-1 &&
-             and [ p' `S.member` M.keysSet obscured || not (B.inBounds p')
-                 | p' <- (p +^) <$> [ P.Pos x y | x <- [0,1], y <- [0,1] ] ]) B.poss
-        iHighlighted = M.fromSet (const $ bold '#') $ S.filter (\p -> P.x p < B.w-1 && P.y p < B.h-1 &&
-             and [ p' `S.member` hps
-                 | p' <- (p +^) <$> [ P.Pos x y | x <- [0,1], y <- [0,1] ] ]) B.poss
+        iObscured = M.fromSet (const $ dim ' ') . (`S.filter` B.poss) $ \p ->
+            P.x p < B.w-1 && P.y p < B.h-1 &&
+            2 < (length . filter (\wp -> wp `S.member` obscuredWPoss || not (B.inBoundsW wp))
+                $ intAdjWps p)
+        iHighlighted = M.fromSet (const $ bold '#') . (`S.filter` B.poss) $ \p -> P.x p < B.w-1 && P.y p < B.h-1 &&
+            2 < (length . filter (`S.member` hwps) $ intAdjWps p)
+        intAdjWps p = [P.WPos p True, P.WPos p False, P.WPos (p +^ P.dirPos P.DRight) True, P.WPos (p +^ P.dirPos P.DUp) False]
 
         horizCPosMap :: M.Map P.Pos (Maybe Glyph, Maybe Glyph) -> M.Map CP.CPos Glyph
         horizCPosMap m = M.mapMaybe fst (M.mapKeys posCPosL m) `M.union` M.mapMaybe snd (M.mapKeys posCPosR m)

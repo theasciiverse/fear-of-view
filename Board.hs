@@ -22,6 +22,7 @@ import qualified Data.Ord              as O
 import qualified Data.Set              as S
 
 import qualified BoardConf             as BC
+import qualified Fov                   as F
 import qualified Pos                   as P
 import qualified Power                 as Pow
 import qualified RollFrom              as RF
@@ -50,6 +51,9 @@ poss = S.fromList [ P.Pos x y | x <- [0..w-1], y <- [0..h-1] ]
 wPoss :: S.Set P.WPos
 wPoss = S.fromList [ wp | p <- S.toList poss, up <- [True,False], let wp = P.WPos p up, all inBounds $ P.adjPoss wp ]
 
+maxFov :: F.Fov
+maxFov = F.Fov poss wPoss
+
 boundaryWPoss :: S.Set P.WPos
 boundaryWPoss = S.fromList $
      [ P.WPos (P.Pos x y) True | x <- [0..w-1], y <- [-1,h-1] ]
@@ -68,7 +72,7 @@ data Status = Dazzled | Smoke | Haste | Ghost | Foresight deriving (Eq, Ord, Sho
 type Tagged = S.Set P.WPos
 
 data Board = Board
-    { visible    :: S.Set P.Pos
+    { visible    :: F.Fov
     , unrevealed :: S.Set P.Pos
     , creatures  :: M.Map P.Pos Creature
     , items      :: M.Map P.Pos Item
@@ -87,15 +91,15 @@ data Board = Board
     }
 
 new :: BC.BoardConf -> Board
-new = Board S.empty poss M.empty M.empty M.empty initBoundary M.empty [] 0 [] True M.empty M.empty S.empty M.empty where
+new = Board F.empty poss M.empty M.empty M.empty initBoundary M.empty [] 0 [] True M.empty M.empty S.empty M.empty where
      initBoundary = M.fromSet (const UnseenBoundary) boundaryWPoss
 
 empty :: Board
 empty = new BC.emptyBoardConf
 
-modVisible :: (S.Set P.Pos -> S.Set P.Pos) -> Board -> Board
+modVisible :: (F.Fov -> F.Fov) -> Board -> Board
 modVisible f bd = bd { visible = f $ visible bd }
-setVisible :: S.Set P.Pos -> Board -> Board
+setVisible :: F.Fov -> Board -> Board
 setVisible = modVisible . const
 
 modUnrevealed :: (S.Set P.Pos -> S.Set P.Pos) -> Board -> Board
@@ -143,15 +147,15 @@ modTagged f bd = bd { tagged = f $ tagged bd }
 modConf :: (BC.BoardConf -> BC.BoardConf) -> Board -> Board
 modConf f bd = bd { conf = f $ conf bd }
 
-wPosVisible :: S.Set P.Pos -> P.WPos -> Bool
-wPosVisible vis wp = any (`S.member` vis) $ P.adjPoss wp
+boundaryWPosVisible :: F.Fov -> P.WPos -> Bool
+boundaryWPosVisible vis wp = any (`S.member` F.pFov vis) $ P.adjPoss wp
 
-visibleWPoss, invisibleWPoss :: Tagged -> S.Set P.Pos -> S.Set P.WPos
-visibleWPoss tags vis = tags `S.union` S.filter (wPosVisible vis) wPoss
-invisibleWPoss tags vis = S.filter (not . wPosVisible vis) wPoss S.\\ tags
+visibleWPoss, invisibleWPoss :: Tagged -> F.Fov -> S.Set P.WPos
+visibleWPoss tags vis = tags `S.union` F.wpFov vis
+invisibleWPoss tags vis = wPoss S.\\ visibleWPoss tags vis
 
 invisible :: Board -> S.Set P.Pos
-invisible bd = poss S.\\ visible bd
+invisible bd = poss S.\\ F.pFov (visible bd)
 
 treasuresLeft :: Board -> Int
 treasuresLeft bd = treasuresPerBoard - length (found bd)
@@ -211,9 +215,9 @@ setFov hasKey bd0 = setSafe False <$> iter bd0 where
         else do
             bd' <- destroyInvisStuffs . updateVis . destroyInvisWalls . updateVis <$>
                 createAtW (newWVis S.\\ oldWVis) bd
-            newVis' <- (sortOn' pdist <$>) . shuffle . S.toList $ visible bd' S.\\ oldVis
-            let newInvis' = S.toList $ oldVis S.\\ visible bd'
-            bd'' <- revealVis <$> (expectAtMaybe newInvis' =<< createAt newVis' bd')
+            newPVis' <- (sortOn' pdist <$>) . shuffle . S.toList . F.pFov $ visible bd' F.\\ oldVis
+            let newPInvis' = S.toList . F.pFov $ oldVis F.\\ visible bd'
+            bd'' <- revealVis <$> (expectAtMaybe newPInvis' =<< createAt newPVis' bd')
             -- created orbs may lead to new vision, so need to iterate
             iter bd''
     destroyInvisWalls, destroyInvisStuffs :: Board -> Board
@@ -253,9 +257,10 @@ setFov hasKey bd0 = setSafe False <$> iter bd0 where
             maybe bd (($ bd) . modWalls . M.insert wp) <$> RF.roll (BC.wallRoll bc)
     revealVis bd
         -- | Needed when all poss revealed on spawning treasure
-        | S.null (unrevealed bd) && treasuresLeft bd > 0 = setUnrevealed (poss `S.difference` visible bd) bd
+        | S.null (unrevealed bd) && treasuresLeft bd > 0 = setUnrevealed (poss `S.difference` visPs) bd
         -- | Needed only when we created a treasure
-        | otherwise = modUnrevealed (`S.difference` visible bd) bd
+        | otherwise = modUnrevealed (`S.difference` visPs) bd
+        where visPs = F.pFov $ visible bd
     pdist :: P.Pos -> Int
     pdist | ppos:_ <- playerPoss bd0 = P.distSquared ppos
         | otherwise = const 0
@@ -265,7 +270,7 @@ seeBoundary hasKey bd = do
     v <- newVisBdd
     pure $ modExits (flip (foldr set) v) bd
     where
-    newVisBdd = (sortOn' (negate . pdist) <$>) . shuffle . S.toList . S.filter (wPosVisible $ visible bd) .
+    newVisBdd = (sortOn' (negate . pdist) <$>) . shuffle . S.toList . S.filter (boundaryWPosVisible $ visible bd) .
              S.filter ((== Just UnseenBoundary) . (exits bd M.!?)) $ boundaryWPoss
     set :: P.WPos -> M.Map P.WPos Exit -> M.Map P.WPos Exit
     set wp exs = M.insert wp ex exs where
@@ -284,22 +289,21 @@ seeBoundary hasKey bd = do
     pdist | ppos:_ <- playerPoss bd = P.distSquaredToWPos ppos
         | otherwise = const 0
 
-
-fov, playerFov :: Board -> S.Set P.Pos
+fov, playerFov :: Board -> F.Fov
 fov bd = addOrbFovs plFov plFov where
     plFov = fovs $ playerPoss bd <> cameraPoss bd
-    fovs = S.unions . map (fovAt bd)
-    addOrbFovs :: S.Set P.Pos -> S.Set P.Pos -> S.Set P.Pos
+    fovs = F.unions . map (fovAt bd)
+    addOrbFovs :: F.Fov -> F.Fov -> F.Fov
     addOrbFovs v news
-        | S.null news = v
+        | F.null news = v
         | otherwise = let
-            orbPoss = [ p | (p, i) <- M.assocs $ M.restrictKeys (items bd) news, isOrb i ]
+            orbPoss = [ p | (p, i) <- M.assocs . M.restrictKeys (items bd) $ F.pFov news, isOrb i ]
             orbFovs = fovs orbPoss
             isOrb (ItemInvItem Orb) = True
             isOrb (RollingOrb _ _)  = True
             isOrb _                 = False
-        in addOrbFovs (v `S.union` orbFovs) (orbFovs S.\\ v)
-playerFov bd = S.unions . map (fovAt bd) $ playerPoss bd
+        in addOrbFovs (v `F.union` orbFovs) (orbFovs F.\\ v)
+playerFov bd = F.unions . map (fovAt bd) $ playerPoss bd
 
 
 playerPoss :: Board -> [ P.Pos ]
@@ -308,38 +312,55 @@ playerPoss bd = [ p | (p,c) <- M.assocs $ creatures bd, c `elem` [Player, DeadPl
 cameraPoss :: Board -> [ P.Pos ]
 cameraPoss bd = [ p | (p, ItemInvItem (Camera _)) <- M.assocs $ items bd ]
 
-fovAt :: Board -> P.Pos -> S.Set P.Pos
-fovAt bd base = S.filter inRange $ poss S.\\ blocked where
-    blocked = S.unions [ wallCone (short wl) base wp
+fovAt :: Board -> P.Pos -> F.Fov
+fovAt bd base = F.filter pInRange wpInRange $ maxFov F.\\ blocked where
+    blocked = F.unions [ wallCone (short wl) base wp
         | (wp,wl) <- M.assocs $ walls bd, wl `notElem` [Window, BrokenWindow]
         ] where
         short Pillar           = True
         short (UmbrellaWall _) = True
         short _                = False
-    inRange
+    pInRange
         | Just r <- sightRadius = (<= r*r) . ((smokeFac*smokeFac)*) . P.distSquared base
         | otherwise = const True
+    wpInRange
+        | Just r <- sightRadius = (<= 2*r*2*r) . ((smokeFac*smokeFac)*) . P.distSquaredToWPos base
+        | otherwise = const True
+    sightRadius = minimumMay $ mapMaybe rad (M.assocs (statuses bd))
         where
-        sightRadius = minimumMay $ mapMaybe rad (M.assocs (statuses bd))
-        rad (Dazzled,_) = Just 0
+        rad (Dazzled,_) = Just $ smokeFac `div` 2
         rad (Smoke,n)   = Just $ max 0 (maxSmoke - n) + smokeFac
         rad _           = Nothing
 
-wallCone :: Bool -> P.Pos -> P.WPos -> S.Set P.Pos
-wallCone short base wp = (poss `S.intersection`) $ (base +^) `S.map` wallCone' (neg base +^ wp) where
-    wallCone' (P.WPos p False) = flipPos `S.map` wallCone' (P.WPos (flipPos p) True)
+wallCone :: Bool -> P.Pos -> P.WPos -> F.Fov
+wallCone short base wp = maxFov `F.intersection`
+        (F.rebase base . wallCone' $ neg base +^ wp)
+    where
+    wallCone' :: P.WPos -> F.Fov
+    wallCone' (P.WPos p False) = F.map flipPos flipWPos $ wallCone' (P.WPos (flipPos p) True)
     wallCone' (P.WPos (P.Pos x y) True)
-        | x < 0 = (\(P.Pos x' y') -> P.Pos (-x') y') `S.map` wallCone' (P.WPos (P.Pos (-x) y) True)
-        | y < 0 = (\(P.Pos x' y') -> P.Pos x' (-y')) `S.map` wallCone' (P.WPos (P.Pos x (-y-1)) True)
-        | otherwise =
-            S.fromList [ P.Pos x' y'
+        | x < 0 = F.map reflxPos reflxWPos $ wallCone' (P.WPos (P.Pos (-x) y) True)
+        | y < 0 = F.map reflyPos reflyWPos $ wallCone' (P.WPos (P.Pos x (-y-1)) True)
+        | otherwise = F.Fov coneP coneWP
+            where
+            -- (y+1/2)/(x-w/2) <= y'/x' <= (y+1/2)/(x+w/2)
+            ineq x' y' | short = abs (x'*(8*y+4) - 8*y'*x) <= 3*y' -- w = 3/4
+                | otherwise    = abs (x'*(2*y+1) - 2*y'*x) <= y' -- w = 1
+            coneP = S.fromList [ P.Pos x' y'
                 | x' <- [-w..w], y' <- [y+1..h]
                 , ineq x' y'
-                ] where
-        -- (y+1/2)/(x-w/2) <= y'/x' <= (y+1/2)/(x+w/2)
-        ineq x' y' | short = abs (x'*(8*y+4) - 8*y'*x) <= 3*y' -- w = 3/4
-            | otherwise    = abs (x'*(2*y+1) - 2*y'*x) <= y' -- w = 1
+                ]
+            coneWP = S.fromList [ P.WPos (P.Pos x' y') up
+                | x' <- [-w..w], y' <- [y+1..h]
+                , up <- [False, True]
+                , if up then ineq (2*x') (2*y' + 1) else ineq (2*x' + 1) (2*y')
+                ]
     flipPos (P.Pos x y) = P.Pos y x
+    flipWPos (P.WPos p up) = P.WPos (flipPos p) (not up)
+    reflxPos (P.Pos x y) = P.Pos (-x) y
+    reflyPos (P.Pos x y) = P.Pos x (-y)
+    reflxWPos (P.WPos p up) = P.WPos ((if up then id else (+^ P.dirPos P.DLeft)) $ reflxPos p) up
+    reflyWPos (P.WPos p up) = P.WPos ((if not up then id else (+^ P.dirPos P.DDown)) $ reflyPos p) up
 
 smokeFac, maxSmoke :: Int
 smokeFac = 4
@@ -398,11 +419,11 @@ creatureCanTryMove bd c p dir =
         [ inBounds p'
         , creatures bd M.!? p' `elem` [Nothing, Just Player]
         , throughWall bd c $ walls bd M.!? wp
-        , c /= SmartMonster || p' `S.member` playerFov bd
+        , c /= SmartMonster || p' `S.member` F.pFov (playerFov bd)
         ]
 
 enterAt :: P.WPos -> Board -> Board
-enterAt wp@(P.WPos (P.Pos x y) _) = modVisible (S.insert p') . modCreatures (M.insert p' Player) . modExits (M.insert wp Entrance) where
+enterAt wp@(P.WPos (P.Pos x y) _) = modVisible (F.insertP p') . modCreatures (M.insert p' Player) . modExits (M.insert wp Entrance) where
     p' = P.Pos (max 0 x) (max 0 y)
 
 oppositeWPos :: P.WPos -> P.WPos
@@ -600,14 +621,13 @@ tryUseInvItem e d bd
                     else pure $ inflate bd
             Orb -> ($ bd) <$> dropItem p' (RollingOrb d True)
             Flash ->
-                let flashPoss = wallCone True p wp
-                    flashWPoss = wp `S.insert` invisibleWPoss S.empty (poss S.\\ flashPoss)
+                let flashFov@(F.Fov flashPoss flashWPoss) = wallCone True p wp
                     delPoss = flip (foldr M.delete) flashPoss
                     delWPoss = flip (foldr M.delete) flashWPoss
                     delWPossS = flip (foldr S.delete) flashWPoss
                     newUnrevealed bd' = unrevealed bd' `S.difference` flashPoss
                     reveal, destroyTreasure :: Board -> Board
-                    reveal = modUnrevealed (`S.difference` flashPoss) . destroyTreasure . modVisible (`S.union` flashPoss)
+                    reveal = modUnrevealed (`S.difference` flashPoss) . destroyTreasure . modVisible (`F.union` flashFov)
                     -- | Pretend we created and immediately destroyed a treasure on flashing all unrevealed
                     destroyTreasure bd'
                         | null $ newUnrevealed bd'

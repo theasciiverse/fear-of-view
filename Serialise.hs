@@ -19,6 +19,7 @@ import           Wall
 
 import qualified Board                  as B
 import qualified BoardConf              as BC
+import qualified Fov                    as F
 import qualified Game                   as G
 import qualified Highscore              as HS
 import qualified Inventory              as I
@@ -53,6 +54,8 @@ deriving instance Generic BC.Diffable
 instance Serialise BC.Diffable
 deriving instance Generic a => Generic (BC.RollFromDiff a)
 instance (Generic a, Serialise a) => Serialise (BC.RollFromDiff a)
+deriving instance Generic F.Fov
+instance Serialise F.Fov
 deriving instance Generic B.Status
 instance Serialise B.Status
 deriving instance Generic B.Board
