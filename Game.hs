@@ -64,7 +64,7 @@ data Game = Game
 
 maxLevel, maxScore, initLife, charmBonus :: Int
 maxLevel = 3
-maxScore = 25
+maxScore = 20
 initLife = 5
 charmBonus = 1
 
