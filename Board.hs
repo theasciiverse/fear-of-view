@@ -620,7 +620,11 @@ tryUseInvItem e d bd
                         let (bd', mr) = runWriter $ tryMoveCreature d p' bd
                         guard . getAny $ someAction mr
                         pure $ addUmbrellaWall bd'
-                    else pure . modItems (M.insert p' . UmbrellaHandle d $ charges - 1) . addUmbrellaWall $ bd
+                    else pure
+                        . (if charges > 1
+                            then modItems (M.insert p' . UmbrellaHandle d $ charges - 1)
+                            else id)
+                        . addUmbrellaWall $ bd
             Balloon charges -> let inflate = modCreatures (M.insert p' (InflatedBalloon $ charges - 1))
                 in if p' `M.member` creatures bd
                     then do
