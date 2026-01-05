@@ -76,17 +76,18 @@ twoCharNumStyled n style
     | 0 <= n && n < 10 = [(" ", style0), (show n, style)]
     | otherwise = [(take 2 $ show n, style)]
 
-
 drawStatus :: TM.TermM m => G.Game -> m ()
-drawStatus (G.Game { G.life = life, G.maxLife = maxLife, G.score = score, G.level = level, G.round = rnd, G.junk = junk, G.equipment = equipment, G.board = B.Board { B.statuses = statuses } }) = do
+drawStatus (G.Game { G.maxLife = maxLife, G.score = score, G.level = level, G.round = rnd, G.junk = junk, G.equipment = equipment, G.board = bd }) = do
     let win = StatusWin
     unless (M.null statuses) $ drawStyledStrs win (CP.CPos 0 0) statusStrs
     drawStyledStrs win (CP.CPos 0 1) numStrs
     where
+    statuses = B.statuses bd
+    life = B.life bd
     -- XXX: keep in sync with magic numbers in highlightTut
     numStrs =
         [ ("Life: ", style0)
-        ] <> twoCharNumStyled life lifeStyle <>
+        ] <> twoCharNumStyled life (lifeStyle life) <>
         [ ("/", style0)
         , (show maxLife, if maxLife == G.initLife then style0 else equipStyle Charm)
         , ("   Score: ", style0)
@@ -99,15 +100,6 @@ drawStatus (G.Game { G.life = life, G.maxLife = maxLife, G.score = score, G.leve
         , (twoCharNum junk <> "/" <> show (S.size equipment + 2), style0)
         , ("%", junkStyle)
         ]
-    lifeStyle = case life of
-        n | n <= 0 -> CStyle (onRed black) True
-        1          -> CStyle red True
-        2          -> CStyle red False
-        3          -> CStyle yellow True
-        4          -> CStyle yellow False
-        5          -> style0
-        6          -> CStyle green False
-        _          -> CStyle green True
     statusStrs = intersperse ("   ", style0)
         [ (show stat <> " " <> twoCharNum n, statStyle status)
         | status@(stat,n) <- M.assocs statuses
@@ -188,9 +180,19 @@ scoreStyle, junkStyle :: CStyle
 scoreStyle = CStyle yellow False
 junkStyle = CStyle blue True
 
+lifeStyle :: Int -> CStyle
+lifeStyle = \case
+    n | n <= 0 -> CStyle (onRed black) True
+    1          -> CStyle red True
+    2          -> CStyle red False
+    3          -> CStyle yellow True
+    4          -> CStyle yellow False
+    5          -> style0
+    6          -> CStyle green False
+    _          -> CStyle green True
+
 creatureGlyph :: Creature -> Glyph
-creatureGlyph Player          = bold '@'
-creatureGlyph DeadPlayer      = Glyph '@' $ CStyle (onRed black) True
+creatureGlyph (Player life)   = Glyph '@' $ lifeStyle life
 creatureGlyph BasicMonster    = Glyph 'm' $ CStyle yellow False
 creatureGlyph CalmMonster     = Glyph 'p' $ CStyle blue True
 creatureGlyph GhostMonster    = Glyph 'g' $ CStyle white True
@@ -306,10 +308,7 @@ drawAlertedBoard AlertedBoard{ base = bd, creatureMoves = cmvs, itemMoves = imvs
             _ | Pow.overUsable pow  -> equipStyle Siphon
             _                       -> style0
         creatures = (,Nothing) . Just . creatureGlyph' <$> B.creatures bd
-        creatureGlyph' Player = Glyph '@' $ CStyle col (not $ B.ghostly bd) where
-            col | B.isHasteRound bd = red
-                | B.hasted bd = yellow
-                | otherwise = white
+        creatureGlyph' (Player life) = Glyph '@' $ (lifeStyle life) { cstyleBold = not $ B.ghostly bd }
         creatureGlyph' c = creatureGlyph c
         obscured = M.fromSet (\p -> (Just . dim $ expectChar p,) . Just . powerBG p . dim $ obsChar p) $ B.poss S.\\ F.pFov (B.visible bd) where
             expectChar p
@@ -577,8 +576,8 @@ drawMainScreen game = do
 
 tutBox :: T.Beat -> Maybe (CP.CPos, [Glyph])
 tutBox = tutBox' where
-    tutBox' (T.Movement p) = Just (boardOffset <> posCPosL p, [creatureGlyph Player])
-    tutBox' (T.Trapped p) = Just (boardOffset <> posCPosL p, [creatureGlyph Player])
+    tutBox' (T.Movement p lf) = Just (boardOffset <> posCPosL p, [creatureGlyph $ Player lf])
+    tutBox' (T.Trapped p lf) = Just (boardOffset <> posCPosL p, [creatureGlyph $ Player lf])
     tutBox' (T.SeeMonster p c) = Just (boardOffset <> posCPosL p, [creatureGlyph c])
     tutBox' (T.SeeExit wp) = Just (boardOffset <> wposCPos wp, [bold . exitChar True $ P.exitDir wp])
     tutBox' (T.SeeItem p i) = Just (boardOffset <> posCPosR p, [itemGlyph i])

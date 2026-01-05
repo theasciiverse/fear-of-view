@@ -8,8 +8,8 @@ import qualified Pos      as P
 data Beat
     = Meta
     | Meta2
-    | Movement P.Pos
-    | Trapped P.Pos
+    | Movement P.Pos Int
+    | Trapped P.Pos Int
     | Hurt Int Int
     | CollectItem
     | CollectItem2
@@ -52,8 +52,8 @@ data Type
 tp :: Beat -> Type
 tp Meta             = TMeta
 tp Meta2            = TMeta2
-tp (Movement _)     = TMovement
-tp (Trapped _)      = TTrapped
+tp (Movement _ _)   = TMovement
+tp (Trapped _ _)    = TTrapped
 tp (SeeMonster _ _) = TSeeMonster
 tp (SeeExit _)      = TSeeExit
 tp (SeeItem _ _)    = TSeeItem

@@ -49,7 +49,6 @@ data Game = Game
     , equipment    :: S.Set Equipment
     , selectedSlot :: Maybe I.Slot
     , score        :: Int
-    , life         :: Int
     , maxLife      :: Int
     , junk         :: Int
     , level        :: Int
@@ -88,23 +87,21 @@ baseLevels = IM.fromList
 new :: MonadIO m => m Game
 new = do
     g <- initStdGen
-    pure $ Game { board = B.empty, transitions = [], inventory = I.empty, equipment = S.empty, selectedSlot = Nothing, score = 0, life = 0, maxLife = 0, junk = 0, level = 0, round = 0, roundItems = [], levels = baseLevels, prev = Nothing, unseenBeats = S.fromList T.allTypes, prevHS = Nothing, gen = g }
+    pure $ Game { board = B.empty, transitions = [], inventory = I.empty, equipment = S.empty, selectedSlot = Nothing, score = 0, maxLife = 0, junk = 0, level = 0, round = 0, roundItems = [], levels = baseLevels, prev = Nothing, unseenBeats = S.fromList T.allTypes, prevHS = Nothing, gen = g }
 
 modBoard :: (B.Board -> B.Board) -> Game -> Game
 modBoard f game = game { board = f $ board game }
 setBoard :: B.Board -> Game -> Game
 setBoard = modBoard . const
 
-modScore, modLife, modMaxLife, modJunk, modLevel, modRound :: (Int -> Int) -> Game -> Game
+modScore, modMaxLife, modJunk, modLevel, modRound :: (Int -> Int) -> Game -> Game
 modScore f game = game { score = f $ score game }
-modLife f game = game { life = f $ life game }
 modMaxLife f game = game { maxLife = f $ maxLife game }
 modJunk f game = game { junk = f $ junk game }
 modLevel f game = game { level = f $ level game }
 modRound f game = game { round = f $ round game }
-setScore, setLife, setMaxLife, setJunk, setLevel, setRound :: Int -> Game -> Game
+setScore, setMaxLife, setJunk, setLevel, setRound :: Int -> Game -> Game
 setScore = modScore . const
-setLife = modLife . const
 setMaxLife = modMaxLife . const
 setJunk = modJunk . const
 setLevel = modLevel . const
@@ -122,7 +119,7 @@ setPrev :: Maybe Game -> Game -> Game
 setPrev = modPrev . const
 
 modLifeWithMax, modScoreWithMax :: (Int -> Int) -> Game -> Game
-modLifeWithMax f game = modLife (min (maxLife game) . f) game
+modLifeWithMax f game = modBoard (B.modLife $ min (maxLife game) . f) game
 modScoreWithMax f = modScore $ min maxScore . f
 
 modTransitions :: ([B.Transition] -> [B.Transition]) -> Game -> Game
@@ -211,19 +208,19 @@ nextRound = do
     modify . modInventory . I.clearAllBut =<< gets preserveSlots
     modify $ modRound (+1) . setLevel 1 . setPrev Nothing
     charmed <- gets $ hasEquip Charm
-    let l = initLife + if charmed then charmBonus else 0
-    modify $ setLife l . setMaxLife l
+    modify . setMaxLife $ initLife + if charmed then charmBonus else 0
     modify . setRoundItems =<< evalR (take 4 <$> shuffle findableTreasures)
-    enterNewBoard True =<< evalR (randMemberUnsafe B.boundaryWPoss)
+    lf <- gets maxLife
+    enterNewBoard lf True =<< evalR (randMemberUnsafe B.boundaryWPoss)
     endTurn
 
-enterNewBoard :: MonadState Game m => Bool -> P.WPos -> m ()
-enterNewBoard doRecharge e = do
+enterNewBoard :: MonadState Game m => Int -> Bool -> P.WPos -> m ()
+enterNewBoard lf doRecharge e = do
     powers <- gets $ (if doRecharge then M.map Pow.recharge else id) . B.powers . board
     bc <- gets currentLevelBC
     diffs <- evalR $ BC.genDiffs bc
     is <- gets roundItems
-    modify . setBoard $ (B.enterAt e $ B.new bc) { B.powers = powers, B.diffs = diffs, B.possItems = is}
+    modify . setBoard $ (B.enterAt lf e $ B.new bc) { B.powers = powers, B.diffs = diffs, B.possItems = is}
     setFov
     where
     currentLevelBC game = fromMaybe BC.emptyBoardConf . (IM.!? level game) $ levels game
@@ -272,12 +269,13 @@ modBoardTellM f = do
 modBoardTell :: MonadState Game m => (B.Board -> Writer a B.Board) -> m a
 modBoardTell = modBoardTellM . (mapWriterT (pure . runIdentity) .)
 
-exitLevel :: MonadState Game m => P.WPos -> m ()
-exitLevel exitPos = do
+exitLevel :: MonadState Game m => (Creature, P.WPos) -> m ()
+exitLevel (Player lf, exitPos) = do
     modify (modLevel $ (`mod` 4) . (+1))
     lev <- gets level
     when (lev <= maxLevel) $
-        enterNewBoard False $ B.oppositeWPos exitPos
+        enterNewBoard lf False $ B.oppositeWPos exitPos
+exitLevel _ = pure ()
 
 doAlarm :: MonadState Game m => P.Dir -> m ()
 doAlarm dir = do
@@ -309,7 +307,7 @@ useInvSlotInDir slot dir = do
             unless (null is) $ collect is >> envAct >> endTurn
         Just e@(Camera _)
             | p:_ <- B.playerPoss bd
-            , B.creatureCanMove bd Player p dir -> do
+            , B.creatureCanMove bd (Player 1) p dir -> do
                 modify . modBoard . B.modItems . M.insert p $ ItemInvItem e
                 modify . modInventory . I.modInvItems $ useUp slot
                 movePlayer dir
@@ -350,7 +348,6 @@ endTurn = do
     undoCharges <- gets $ maybe 0 Pow.activatableTimes . (M.!? undoPos) . B.powers . board
     modify . eraseBefore $ undoTurns * undoCharges
     modify . setPrev . Just =<< get
-    gets ((<=0) . life) >>= flip when (modify $ modBoard B.setPlayerDead)
     where
     eraseBefore n | n <= 0 = setPrev Nothing
     eraseBefore n = modPrev (eraseBefore (n-1) <$>)
@@ -364,14 +361,14 @@ activatePower :: MonadState Game m => m ()
 activatePower = do
     bd <- gets board
     case True of
-        _ | p:_ <- B.playerPoss bd
+        _ | (p,plc):_ <- B.players bd
           , Just pow <- B.powers bd M.!? p
           , Pow.activatable pow
           -> do
               when (Pow.tp pow == Pow.Foresight) . modifyR $ modBoardM B.beginExpect
               -- |XXX: Be careful of the subtle interaction with the undo power
               -- when changing this.
-              modify $ modBoard (B.modPowers $ M.alter (Pow.deplete =<<) p) . doPower (Pow.tp pow) p
+              modify $ modBoard (B.modPowers $ M.alter (Pow.deplete =<<) p) . doPower (Pow.tp pow) (p,plc)
               unless (Pow.tp pow == Pow.Undo) envAct
               endTurn
         _ -> pure ()
@@ -382,7 +379,7 @@ activatePower = do
     doPower Pow.Dazzle _ = modBoard $ B.incStatus B.Dazzled 5
     doPower Pow.Ghost _ = modBoard $ B.incStatus B.Ghost 6
     doPower Pow.Foresight _ = modBoard $ B.incStatus B.Foresight 10
-    doPower Pow.Teleport p = modBoard $ B.setSafe True . B.modCreatures (M.delete p . M.insert (centre +^ centre +^ neg p) Player)
+    doPower Pow.Teleport (p,plc) = modBoard $ B.setSafe True . B.modCreatures (M.delete p . M.insert (centre +^ centre +^ neg p) plc)
     doPower Pow.Undo _ = \game -> let (game',trans) = runWriter $ prevTurn undoTurns game in game' { transitions = reverse trans } where
         prevTurn :: Int -> Game -> Writer [B.Transition] Game
         prevTurn n g | n < 0 = pure g
@@ -393,14 +390,15 @@ data PlayState = Playing | Dead | RoundEnded | Won | Tutorialising T.Beat derivi
 playState :: Game -> PlayState
 playState game
     | level game == 0 = RoundEnded
-    | life game <= 0 && not (B.canUndo $ board game) = Dead
+    | B.life bd <= 0 && not (B.canUndo bd) = Dead
     | score game >= maxScore = Won
     | Just b <- S.lookupMin $ triggeredBeats game = Tutorialising b
     | otherwise = Playing
+    where bd = board game
 
 doCommand :: (MonadState Game m, MonadIO m) => C.Command -> m ()
 doCommand c = do
-    onlyUndo <- gets $ \game -> life game <= 0 && B.canUndo (board game)
+    onlyUndo <- gets $ (\bd -> B.life bd <= 0 && B.canUndo bd) . board
     gets playState >>= \case
         Dead -> case c of
             C.Accept -> initGame
@@ -441,12 +439,12 @@ triggeredBeats :: Game -> S.Set T.Beat
 triggeredBeats game = S.unions . S.map triggered $ unseenBeats game where
     triggered T.TMeta = S.singleton T.Meta
     triggered T.TMeta2 = S.singleton T.Meta2
-    triggered T.TMovement | p:_ <- B.playerPoss bd = S.singleton $ T.Movement p
+    triggered T.TMovement | p:_ <- B.playerPoss bd = S.singleton $ T.Movement p (B.life bd)
     triggered T.TTrapped | p:_ <- B.playerPoss bd
         , all (trappedDir p) P.dirs
         , any ((`M.member` B.walls bd) . P.wposInDir p) P.dirs
         , not $ any ((\case {Just (Exit _) -> True; _ -> False}) . (B.exits bd M.!?) . P.wposInDir p) P.dirs
-        = S.singleton $ T.Trapped p
+        = S.singleton $ T.Trapped p (B.life bd)
     triggered T.TSeeMonster = uncurry T.SeeMonster `S.map` (S.fromList . M.assocs . M.filter isMonster $ B.creatures bd)
     triggered T.TSeeExit = T.SeeExit `S.map` M.keysSet (M.filter (== Exit True) $ B.exits bd)
     triggered T.TSeeItem = uncurry T.SeeItem `S.map` (S.fromList . M.assocs . M.filter
@@ -455,7 +453,7 @@ triggeredBeats game = S.unions . S.map triggered $ unseenBeats game where
     triggered T.TSeeScore = T.SeeScore `S.map` M.keysSet (M.filter (== ScoreTreasure) $ B.items bd)
     triggered T.TSeeJunk = T.SeeJunk `S.map` M.keysSet (M.filter (== Junk) $ B.items bd)
     triggered T.TSeeGem = T.SeeGem `S.map` M.keysSet (M.filter (\case {Gem _ -> True; _ -> False}) $ B.items bd)
-    triggered T.THurt | life game < maxLife game = sng $ T.Hurt (life game) (maxLife game)
+    triggered T.THurt | B.life bd < maxLife game = sng $ T.Hurt (B.life bd) (maxLife game)
     triggered T.TCollectItem | 1 `M.member` I.invItems (inventory game) = sng T.CollectItem
     triggered T.TCollectItem2 | 1 `M.member` I.invItems (inventory game) = sng T.CollectItem2
     triggered T.TCollectGem | p:_ <- B.playerPoss bd, p `M.member` B.powers bd = sng T.CollectGem

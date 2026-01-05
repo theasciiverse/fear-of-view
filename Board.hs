@@ -164,10 +164,15 @@ onSpawnTreasure :: Item -> Board -> Board
 onSpawnTreasure tr bd = (if treasuresLeft bd > 1 then setUnrevealed poss else id)
     $ modFound (<>[tr]) bd
 
-setPlayerDead :: Board -> Board
-setPlayerDead = modCreatures . M.map $ \case
-    Player -> DeadPlayer
-    c      -> c
+life :: Board -> Int
+life bd
+    | (_, Player lf):_ <- players bd = lf
+    | otherwise = 0
+
+modLife :: (Int -> Int) -> Board -> Board
+modLife f = modCreatures . M.map $ \case
+    Player lf -> Player $ f lf
+    c         -> c
 
 powerTypeAt :: P.Pos -> Pow.PowerType
 powerTypeAt (P.Pos x y)
@@ -307,7 +312,10 @@ playerFov bd = F.unions . map (fovAt bd) $ playerPoss bd
 
 
 playerPoss :: Board -> [ P.Pos ]
-playerPoss bd = [ p | (p,c) <- M.assocs $ creatures bd, c `elem` [Player, DeadPlayer] ]
+playerPoss bd = [ p | (p,c) <- M.assocs $ creatures bd, isPlayer c ]
+
+players :: Board -> [ (P.Pos, Creature) ]
+players bd = filter (isPlayer . snd) . M.assocs $ creatures bd
 
 cameraPoss :: Board -> [ P.Pos ]
 cameraPoss bd = [ p | (p, ItemInvItem (Camera _)) <- M.assocs $ items bd ]
@@ -381,7 +389,7 @@ data Transition = Transition { transBase :: Board, transAlerts :: [Alert] }
 
 data MoveResults = MoveResults
     { damage     :: Sum Int
-    , exitings   :: [P.WPos]
+    , exitings   :: [(Creature, P.WPos)]
     , alarmings  :: [P.Dir]
     , alerts     :: [Alert]
     , someAction :: Any
@@ -399,8 +407,8 @@ movePlayers dir bd = foldM (flip $ tryMoveCreature dir) bd (playerPoss bd)
 throughWall :: Board -> Creature -> Maybe Wall -> Bool
 throughWall _ _ Nothing                     = True
 throughWall _ GhostMonster _                = True
-throughWall bd Player _ | ghostly bd        = True
-throughWall _ Player (Just Hedge)           = True
+throughWall bd (Player _) _ | ghostly bd        = True
+throughWall _ (Player _) (Just Hedge)           = True
 throughWall _ (InflatedBalloon _) (Just _)  = False
 throughWall _ _ (Just BrokenWindow)         = True
 throughWall _ _ _                           = False
@@ -412,7 +420,7 @@ creatureCanMove :: Board -> Creature -> P.Pos -> P.Dir -> Bool
 creatureCanMove bd c p dir =
     let p' = P.dirPos dir +^ p
         wp = P.wposInDir p dir
-    in inBounds p' && (c == Player || M.notMember p' (creatures bd)) && throughWall bd c (walls bd M.!? wp)
+    in inBounds p' && (isPlayer c || M.notMember p' (creatures bd)) && throughWall bd c (walls bd M.!? wp)
 
 creatureCanTryMove :: Board -> Creature -> P.Pos -> P.Dir -> Bool
 creatureCanTryMove bd c p dir =
@@ -420,13 +428,13 @@ creatureCanTryMove bd c p dir =
         wp = P.wposInDir p dir
     in and
         [ inBounds p'
-        , creatures bd M.!? p' `elem` [Nothing, Just Player]
+        , maybe True isPlayer $ creatures bd M.!? p'
         , throughWall bd c $ walls bd M.!? wp
         , c /= SmartMonster || p' `S.member` F.pFov (playerFov bd)
         ]
 
-enterAt :: P.WPos -> Board -> Board
-enterAt wp@(P.WPos (P.Pos x y) _) = modVisible (F.insertP p') . modCreatures (M.insert p' Player) . modExits (M.insert wp Entrance) where
+enterAt :: Int -> P.WPos -> Board -> Board
+enterAt lf wp@(P.WPos (P.Pos x y) _) = modVisible (F.insertP p') . modCreatures (M.insert p' (Player lf)) . modExits (M.insert wp Entrance) where
     p' = P.Pos (max 0 x) (max 0 y)
 
 oppositeWPos :: P.WPos -> P.WPos
@@ -435,7 +443,7 @@ oppositeWPos (P.WPos (P.Pos x y) False) = P.WPos (P.Pos (w-2-x) y) False
 
 tryMoveCreature :: P.Dir -> P.Pos -> Board -> Writer MoveResults Board
 tryMoveCreature dir p bd
-    | Just Player <- creatures bd M.!? p
+    | Just (Player _) <- creatures bd M.!? p
     , not $ ghostly bd
     , Just wl <- walls bd M.!? wp
     , Just cost <- wallDestructionCost wl
@@ -445,11 +453,11 @@ tryMoveCreature dir p bd
     | Just c <- creatures bd M.!? p, creatureCanMove bd c p dir = do
         let p' = P.dirPos dir +^ p
         bd' <- case creatures bd M.!? p' of
-            Just (InflatedBalloon _) | c == Player ->
+            Just (InflatedBalloon _) | isPlayer c ->
                 tryMoveCreature dir p' bd
             _ -> pure bd
         let creatureDestroyed = maybe False isMonster $ creatures bd' M.!? p'
-            throughPainful = c == Player && not (ghostly bd) &&
+            throughPainful = isPlayer c && not (ghostly bd) &&
                 (walls bd M.!? wp) `elem` [Just Hedge, Just BrokenWindow]
             dmg = sum $ [2 | creatureDestroyed] <> [1 | throughPainful]
             modMove = modCreatures $ M.insert p' c . M.delete p
@@ -461,12 +469,12 @@ tryMoveCreature dir p bd
                 | otherwise = id
         tell $ action { damage = Sum dmg, alerts = move c }
         pure . modBalloon . modMove $ bd'
-    | Just Player <- creatures bd M.!? p
+    | Just c@(Player _) <- creatures bd M.!? p
     , Just e <- exits bd M.!? wp = case e of
         Exit True     -> breakExit Exit
         KeyExit True  -> breakExit KeyExit
-        Exit False    -> leave
-        KeyExit False -> leave
+        Exit False    -> leave c
+        KeyExit False -> leave c
         _             -> pure bd
     | otherwise = pure bd
     where
@@ -480,8 +488,9 @@ tryMoveCreature dir p bd
     breakExit etp = do
         tell action { alarmings = [dir] }
         pure . modConf (BC.apply (diffs bd) dir) $ modExits (M.insert wp $ etp False) bd
-    leave = do
-        tell $ action { exitings = [wp], alerts = move Player }
+    leave :: Creature -> Writer MoveResults Board
+    leave c = do
+        tell $ action { exitings = [(c, wp)], alerts = move c }
         pure $ modCreatures (M.delete p) bd
 
 collectItems :: Board -> Writer [Item] Board
@@ -535,7 +544,7 @@ chaseDir c bd from goal =
     in headMay . concat <$> mapM shuffle dirs
 
 npcs :: Board -> M.Map P.Pos Creature
-npcs = M.filter (/= Player) . creatures
+npcs = M.filter (not . isPlayer) . creatures
 
 incStatus :: Status -> Int -> Board -> Board
 incStatus st n = modStatuses $ M.alter f st where
@@ -602,7 +611,7 @@ npcsAct bd0
 
 tryUseInvItem :: InvItem -> P.Dir -> Board -> WriterT [Alert] Maybe Board
 tryUseInvItem e d bd
-    | p:_ <- playerPoss bd = do
+    | (p,plc):_ <- players bd = do
         tell [AlertUseItem (ItemInvItem e) p d]
         let wp = P.wposInDir p d
         lift . guard $ canUseOnWall e || canReachThrough bd wp
@@ -653,7 +662,7 @@ tryUseInvItem e d bd
                 guard . M.notMember p' $ creatures bd
                 pure .
                     modWalls (flip (foldr (M.alter (Just . fromMaybe TentWall))) (filter inBoundsW $ P.wposInDir p' <$> P.dirs))
-                    . modCreatures (M.delete p . M.insert p' Player) $ bd
+                    . modCreatures (M.delete p . M.insert p' plc) $ bd
             Spraypaint _ -> do
                 guard $ wp `M.member` walls bd
                 pure $ modTagged (S.insert wp) bd
@@ -730,8 +739,7 @@ addPower overUsable bd
 
 canUndo :: Board -> Bool
 canUndo bd
-    | Just c <- creatures bd M.!? undoPos
-    , c `elem` [Player, DeadPlayer]
+    | Just (Player _) <- creatures bd M.!? undoPos
     , Just pow <- powers bd M.!? undoPos
     = Pow.activatableTimes pow > 0
     | otherwise = False
