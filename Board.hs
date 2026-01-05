@@ -405,6 +405,9 @@ throughWall _ (InflatedBalloon _) (Just _)  = False
 throughWall _ _ (Just BrokenWindow)         = True
 throughWall _ _ _                           = False
 
+canReachThrough :: Board -> P.WPos -> Bool
+canReachThrough bd wp = (walls bd M.!? wp) `elem` [Nothing, Just BrokenWindow]
+
 creatureCanMove :: Board -> Creature -> P.Pos -> P.Dir -> Bool
 creatureCanMove bd c p dir =
     let p' = P.dirPos dir +^ p
@@ -506,7 +509,14 @@ collectItemsAt p bd
 grabItem :: P.Dir -> Board -> Writer [Item] Board
 grabItem d bd
     | p:_ <- playerPoss bd
-    = collectItemsAt (p +^ P.dirPos d) bd
+    , canReachThrough bd $ P.wposInDir p d
+    , let p' = p +^ P.dirPos d
+    , Just item <- items bd M.!? p'
+    , case item of
+        RollingOrb _ _ -> False
+        Gem _          -> False
+        _              -> True
+    = collectItemsAt p' bd
     | otherwise = pure bd
 
 
@@ -595,7 +605,7 @@ tryUseInvItem e d bd
     | p:_ <- playerPoss bd = do
         tell [AlertUseItem (ItemInvItem e) p d]
         let wp = P.wposInDir p d
-        lift . guard $ canUseOnWall e || (walls bd M.!? wp) `elem` [Nothing, Just BrokenWindow]
+        lift . guard $ canUseOnWall e || canReachThrough bd wp
         let p' = p +^ P.dirPos d
         lift . guard $ inBounds p'
         case e of
@@ -603,8 +613,7 @@ tryUseInvItem e d bd
             Umbrella charges -> do
                 guard . M.notMember p' $ items bd
                 let wp' = P.wposInDir p' d
-                guard $ inBoundsW wp'
-                guard $ (walls bd M.!? wp') `elem` [Nothing, Just BrokenWindow]
+                guard $ inBoundsW wp' && canReachThrough bd wp'
                 let addUmbrellaWall = modWalls (M.insert wp' $ UmbrellaWall d)
                 if p' `M.member` creatures bd
                     then do
