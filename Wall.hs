@@ -17,7 +17,7 @@ data Wall
 wallDestructionCost :: Wall -> Maybe Int
 wallDestructionCost Hedge            = Nothing
 wallDestructionCost BrokenWindow     = Nothing
-wallDestructionCost (CloakWall _ _)  = Nothing
+wallDestructionCost (CloakWall _ _)  = Just 0
 wallDestructionCost Window           = Just 0
 wallDestructionCost TentWall         = Just 0
 wallDestructionCost (UmbrellaWall _) = Just 0
