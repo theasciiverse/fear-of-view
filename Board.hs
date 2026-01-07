@@ -48,16 +48,19 @@ inBoundsW = all inBounds . P.adjPoss
 poss :: S.Set P.Pos
 poss = S.fromList [ P.Pos x y | x <- [0..w-1], y <- [0..h-1] ]
 
-wPoss :: S.Set P.WPos
-wPoss = S.fromList [ wp | p <- S.toList poss, up <- [True,False], let wp = P.WPos p up, all inBounds $ P.adjPoss wp ]
-
-maxFov :: F.Fov
-maxFov = F.Fov poss wPoss
-
-boundaryWPoss :: S.Set P.WPos
+wPoss, boundaryWPoss, wPossIncBdd :: S.Set P.WPos
+wPoss = S.fromList $
+     [ P.WPos (P.Pos x y) True | x <- [0..w-1], y <- [0..h-2] ]
+     <> [ P.WPos (P.Pos x y) False | x <- [0..w-2], y <- [0..h-1] ]
+wPossIncBdd = S.fromList $
+     [ P.WPos (P.Pos x y) True | x <- [0..w-1], y <- [-1..h-1] ]
+     <> [ P.WPos (P.Pos x y) False | x <- [-1..w-1], y <- [0..h-1] ]
 boundaryWPoss = S.fromList $
      [ P.WPos (P.Pos x y) True | x <- [0..w-1], y <- [-1,h-1] ]
      <> [ P.WPos (P.Pos x y) False | x <- [-1,w-1], y <- [0..h-1] ]
+
+maxFov :: F.Fov
+maxFov = F.Fov poss wPossIncBdd
 
 isBoundaryWPos :: P.WPos -> Bool
 isBoundaryWPos (P.WPos (P.Pos _ y) True)  = y `elem` [-1,h-1]
@@ -147,11 +150,11 @@ modTagged f bd = bd { tagged = f $ tagged bd }
 modConf :: (BC.BoardConf -> BC.BoardConf) -> Board -> Board
 modConf f bd = bd { conf = f $ conf bd }
 
-boundaryWPosVisible :: F.Fov -> P.WPos -> Bool
-boundaryWPosVisible vis wp = any (`S.member` F.pFov vis) $ P.adjPoss wp
+visibleBoundaryWPoss :: F.Fov -> S.Set P.WPos
+visibleBoundaryWPoss = S.filter isBoundaryWPos . F.wpFov
 
 visibleWPoss, invisibleWPoss :: Tagged -> F.Fov -> S.Set P.WPos
-visibleWPoss tags vis = tags `S.union` F.wpFov vis
+visibleWPoss tags vis = tags `S.union` S.filter (not . isBoundaryWPos) (F.wpFov vis)
 invisibleWPoss tags vis = wPoss S.\\ visibleWPoss tags vis
 
 invisible :: Board -> S.Set P.Pos
@@ -275,8 +278,9 @@ seeBoundary hasKey bd = do
     v <- newVisBdd
     pure $ modExits (flip (foldr set) v) bd
     where
-    newVisBdd = (sortOn' (negate . pdist) <$>) . shuffle . S.toList . S.filter (boundaryWPosVisible $ visible bd) .
-             S.filter ((== Just UnseenBoundary) . (exits bd M.!?)) $ boundaryWPoss
+    newVisBdd = (sortOn' (negate . pdist) <$>) . shuffle . S.toList
+        . S.filter ((== Just UnseenBoundary) . (exits bd M.!?)) . visibleBoundaryWPoss
+        $ visible bd
     set :: P.WPos -> M.Map P.WPos Exit -> M.Map P.WPos Exit
     set wp exs = M.insert wp ex exs where
         ex  | needKeyExit && S.size (S.map posOfBoundary $ S.delete wp unseen) == 1 = KeyExit True
