@@ -11,7 +11,7 @@ import           Data.Bifunctor        (second)
 import           Data.Function         (on)
 import           Data.Functor          (($>))
 import           Data.Functor.Identity (runIdentity)
-import           Data.Maybe            (fromMaybe, mapMaybe)
+import           Data.Maybe            (mapMaybe)
 import           Data.Monoid           (Any (..), Sum (..))
 import           Safe                  (atMay, headMay, minimumMay)
 
@@ -665,7 +665,7 @@ tryUseInvItem e d bd
             Tent -> do
                 guard . M.notMember p' $ creatures bd
                 pure .
-                    modWalls (flip (foldr (M.alter (Just . fromMaybe TentWall))) (filter inBoundsW $ P.wposInDir p' <$> P.dirs))
+                    modWalls (flip (foldr (`M.insert` TentWall)) (filter inBoundsW $ P.wposInDir p' <$> P.dirs))
                     . modCreatures (M.delete p . M.insert p' plc) $ bd
             Spraypaint _ -> do
                 guard $ wp `M.member` walls bd
