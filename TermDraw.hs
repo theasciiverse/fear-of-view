@@ -182,14 +182,13 @@ junkStyle = CStyle blue True
 
 lifeStyle :: Int -> CStyle
 lifeStyle = \case
-    n | n <= 0 -> CStyle (onRed black) True
-    1          -> CStyle red True
-    2          -> CStyle red False
-    3          -> CStyle yellow True
-    4          -> CStyle yellow False
-    5          -> style0
-    6          -> CStyle green False
-    _          -> CStyle green True
+    n | n <= 0          -> CStyle (onRed black) True
+    1                   -> CStyle red True
+    2                   -> CStyle red False
+    3                   -> CStyle yellow True
+    4                   -> CStyle yellow False
+    n | n <= G.initLife -> style0
+    _                   -> CStyle green False
 
 creatureGlyph :: Creature -> Glyph
 creatureGlyph (Player life)   = Glyph '@' $ lifeStyle life

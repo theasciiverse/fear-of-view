@@ -64,8 +64,8 @@ data Game = Game
 maxLevel, maxScore, initLife, charmBonus :: Int
 maxLevel = 3
 maxScore = 20
-initLife = 5
-charmBonus = 1
+initLife = 7
+charmBonus = 2
 
 initCreatureSides, initWallSides :: Int
 initCreatureSides = 36
@@ -250,7 +250,7 @@ collect :: MonadState Game m => [Item] -> m ()
 collect = mapM_ collect' where
     collect' (Gem _)            = modify . modBoard . B.addPower =<< gets (hasEquip Siphon)
     collect' ScoreTreasure           = modify $ modScoreWithMax (+1)
-    collect' Potion           = modify $ modLifeWithMax (+4)
+    collect' Potion           = modify $ modLifeWithMax (+3)
     collect' Junk             = addJunk
     collect' (UmbrellaHandle _ 0) = pure ()
     collect' (UmbrellaHandle _ charges) = collect' (ItemInvItem $ Umbrella charges)
@@ -373,7 +373,7 @@ activatePower = do
               endTurn
         _ -> pure ()
     where
-    doPower Pow.Heal _ = modLifeWithMax (+2)
+    doPower Pow.Heal _ = modLifeWithMax (+1)
     doPower Pow.Smoke _ = modBoard $ B.incStatus B.Smoke (B.maxSmoke + 1)
     doPower Pow.Haste _ = modBoard $ B.incStatus B.Haste 8
     doPower Pow.Dazzle _ = modBoard $ B.incStatus B.Dazzled 5
