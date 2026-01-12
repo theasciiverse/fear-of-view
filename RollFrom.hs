@@ -13,6 +13,8 @@ modVals :: (Eq a, Ord a) => ([a] -> [a]) -> RollFrom a -> RollFrom a
 modVals f from = from { vals = f $ vals from }
 modSides :: (Int -> Int) -> RollFrom a -> RollFrom a
 modSides f from = from { sides = f $ sides from }
+setSides :: Int -> RollFrom a -> RollFrom a
+setSides = modSides . const
 
 roll :: (Eq a, Ord a) => RollFrom a -> Rand StdGen (Maybe a)
 roll from = do

@@ -217,7 +217,9 @@ nextRound = do
 enterNewBoard :: MonadState Game m => Int -> Bool -> P.WPos -> m ()
 enterNewBoard lf doRecharge e = do
     powers <- gets $ (if doRecharge then M.map Pow.recharge else id) . B.powers . board
-    bc <- gets currentLevelBC
+    sidesC <- gets $ if doRecharge then const initCreatureSides else RF.sides . BC.creatureRoll . B.conf . board
+    sidesW <- gets $ if doRecharge then const initWallSides else RF.sides . BC.wallRoll . B.conf . board
+    bc <- gets $ BC.modRolls (RF.setSides sidesC) (RF.setSides sidesW) . currentLevelBC
     diffs <- evalR $ BC.genDiffs bc
     is <- gets roundItems
     modify . setBoard $ (B.enterAt lf e $ B.new bc) { B.powers = powers, B.diffs = diffs, B.possItems = is}
