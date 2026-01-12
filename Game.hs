@@ -431,7 +431,7 @@ doCommand c = do
             C.DebugAddPower -> modify . modBoard . B.addPower =<< gets (hasEquip Siphon)
             C.DebugAddJunk -> addJunk
             C.DebugAddItems -> collect findableTreasures
-            C.DebugExit -> exitLevel =<< evalR (randElemUnsafe $ S.toList B.boundaryWPoss)
+            C.DebugExit -> exitLevel =<< (Player initLife,) <$> evalR (randElemUnsafe $ S.toList B.boundaryWPoss)
 #endif
             _ -> pure ()
 
