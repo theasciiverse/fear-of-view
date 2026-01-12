@@ -647,7 +647,9 @@ tryUseInvItem e d bd
                     else pure $ inflate bd
             Orb -> ($ bd) <$> dropItem p' (RollingOrb d True)
             Flash ->
-                let flashFov@(F.Fov flashPoss flashWPoss) = wallCone True p wp
+                let flashFov = wallCone True p wp
+                    flashPoss = F.pFov flashFov
+                    flashWPoss = wp `S.insert` F.wpFov flashFov
                     delPoss = flip (foldr M.delete) flashPoss
                     delWPoss = flip (foldr M.delete) flashWPoss
                     delWPossS = flip (foldr S.delete) flashWPoss
