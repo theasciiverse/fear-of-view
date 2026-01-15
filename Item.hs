@@ -26,7 +26,7 @@ data InvItem
     deriving (Eq, Ord, Show, Read)
 
 initCameraCharge, initBalloonCharges, initSpraypaintCharges, initUmbrellaCharges :: Int
-initCameraCharge = 12
+initCameraCharge = 20
 initBalloonCharges = 3
 initSpraypaintCharges = 5
 initUmbrellaCharges = 8
