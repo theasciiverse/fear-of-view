@@ -3,6 +3,9 @@
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE LambdaCase            #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+#ifdef DEBUG
+{-# LANGUAGE TupleSections         #-}
+#endif
 
 module Game where
 
@@ -71,16 +74,20 @@ initCreatureSides, initWallSides :: Int
 initCreatureSides = 36
 initWallSides = 30
 
+baseCRF :: RF.RollFrom Creature
+baseCRF = RF.RollFrom initCreatureSides
+    [SmartMonster, GhostMonster, CalmMonster, FastMonster]
+
 baseLevels :: IM.IntMap BC.BoardConf
 baseLevels = IM.fromList
     [ (1, BC.BoardConf 1
-        (RF.RollFrom initCreatureSides $ replicate 5 BasicMonster)
+        baseCRF
         (RF.RollFrom initWallSides $ replicate 6 Hedge))
     , (2, BC.BoardConf 2
-        (RF.RollFrom initCreatureSides $ replicate 5 BasicMonster)
+        baseCRF
         (RF.RollFrom initWallSides $ replicate 6 BasicWall <> [Pillar]))
     , (3, BC.BoardConf 3
-        (RF.RollFrom initCreatureSides $ replicate 5 BasicMonster)
+        baseCRF
         (RF.RollFrom initWallSides $ replicate 6 BasicWall <> [Window, Window]))
     ]
 

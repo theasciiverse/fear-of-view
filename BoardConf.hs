@@ -51,21 +51,12 @@ apply bcd d = flip (foldr apply') (fromMaybe [] $ bcd M.!? d) where
 
 genDiffs :: BoardConf -> Rand StdGen BoardConfDiffs
 genDiffs bc = (M.fromList <$>) . forM P.dirs $ \d -> (d,) <$> genDiffDir d where
-    genDiffDir P.DUp    = sequence [ addCreature, swapCreature ]
-    genDiffDir P.DRight = sequence [ addCreature, swapWall ]
-    genDiffDir P.DDown  = sequence [ addWall, swapWall ]
-    genDiffDir P.DLeft  = sequence [ addWall, swapCreature ]
-    addCreature = pure . Add $ DiffableCreature BasicMonster
+    genDiffDir P.DUp    = sequence [ addCreature SmartMonster, swapWall ]
+    genDiffDir P.DDown  = sequence [ addCreature CalmMonster, swapWall ]
+    genDiffDir P.DRight = sequence [ addCreature FastMonster, addWall ]
+    genDiffDir P.DLeft  = sequence [ addCreature GhostMonster, addWall ]
+    addCreature = pure . Add . DiffableCreature
     addWall = pure . Add . DiffableWall $ if level bc == 1 then Hedge else BasicWall
-    swapCreature = do
-        swapOut <- randElem . filter upgradableCreature $ RF.vals (creatureRoll bc)
-        case swapOut of
-            Nothing -> addCreature
-            Just c -> Swap (DiffableCreature c) . DiffableCreature <$> upgradeCreature c
-    creatureUpgrades BasicMonster = [CalmMonster, GhostMonster, SmartMonster, FastMonster]
-    creatureUpgrades _            = []
-    upgradableCreature = not . null . creatureUpgrades
-    upgradeCreature = randElemUnsafe . creatureUpgrades
     swapWall = do
         swapOut <- randElem . filter upgradableWall $ RF.vals (wallRoll bc)
         case swapOut of
