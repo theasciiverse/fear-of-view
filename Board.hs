@@ -594,14 +594,15 @@ npcsAct bd0
                 _ -> pure bd
         | otherwise = pure bd
         where
-        -- Force non-calm monsters to move randomly when next to player
+        -- Force non-calm monsters to move randomly when next to player;
+        -- forced moves ignore powers of GhostMonster and SmartMonster
         forceRand :: Maybe P.Dir -> WriterT [Alert] (Rand StdGen) (Maybe P.Dir)
         forceRand md | c == CalmMonster = pure md
         forceRand (Just dir) | not (creatureCanMove bd c p dir) = randAvailableDir
         forceRand Nothing | c == SmartMonster = randAvailableDir
         forceRand md = pure md
         randAvailableDir = lift . randElem $
-            filter (\d -> creatureCanMove bd c p d && creatureCanTryMove bd c p d) P.dirs
+            filter (\d -> creatureCanMove bd BasicMonster p d && creatureCanTryMove bd BasicMonster p d) P.dirs
 
     pathAlg BasicMonster = chaseDir
     pathAlg CalmMonster  = chaseDir
