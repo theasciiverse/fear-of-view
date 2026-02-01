@@ -355,8 +355,8 @@ undoTurns = 5
 endTurn :: MonadState Game m => m ()
 endTurn = do
     undoCharges <- gets $ maybe 0 Pow.activatableTimes . (M.!? undoPos) . B.powers . board
-    modify . eraseBefore $ undoTurns * undoCharges
     modify . setPrev . Just =<< get
+    modify . eraseBefore $ (undoTurns+1) * undoCharges
     where
     eraseBefore n | n <= 0 = setPrev Nothing
     eraseBefore n = modPrev (eraseBefore (n-1) <$>)
