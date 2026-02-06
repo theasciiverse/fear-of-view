@@ -578,13 +578,17 @@ expectAt ps bd0 = foldM expectP bd0 ps
 
 npcsAct :: Board -> WriterT [Alert] (Rand StdGen) Board
 npcsAct bd0
-    | isHasteRound bd0 = pure bd0
+    | isHasteRound bd0 = do
+        foldM npcAct bd0 =<< getFastActors bd0
     | otherwise = do
-    actors <- lift . shuffle . M.toList $ npcs bd0
-    bd' <- foldM npcAct bd0 actors
-    fastActors <- lift . shuffle . filter (isFast . snd) . M.toList $ npcs bd'
-    foldM npcAct bd' fastActors <* mapM_ (tell . (\(p,c) -> [AlertMoveCreatureVia c p])) fastActors
+    bd' <- foldM npcAct bd0 =<< getActors bd0
+    if hasted bd0 then return bd' else do
+        fastActors <- getFastActors bd'
+        foldM npcAct bd' fastActors <* mapM_ (tell . (\(p,c) -> [AlertMoveCreatureVia c p])) fastActors
     where
+    getActors, getFastActors :: Board -> WriterT [Alert] (Rand StdGen) [(P.Pos, Creature)]
+    getActors = lift . shuffle . M.toList . npcs
+    getFastActors = (filter (isFast . snd) <$>) . getActors
     npcAct :: Board -> (P.Pos, Creature) -> WriterT [Alert] (Rand StdGen) Board
     npcAct bd (p,c)
         | ppos:_ <- playerPoss bd =
