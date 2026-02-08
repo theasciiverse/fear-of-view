@@ -250,7 +250,7 @@ addJunk = do
                 modify . modEquipment $ S.insert e
                 onAdd e
     where
-    enough g = junk g > S.size (equipment g) + 1
+    enough g = junk g > S.size (equipment g)
     onAdd Charm = modify $ modMaxLife (+charmBonus)
     onAdd Siphon = modify . modBoard $ B.modPowers (M.map $ Pow.setOverUsable True)
     onAdd _     = pure ()

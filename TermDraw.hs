@@ -95,9 +95,9 @@ drawStatus (G.Game { G.maxLife = maxLife, G.score = score, G.level = level, G.ro
         , ("~", scoreStyle)
         , ("   Level: " <> twoCharNum rnd <> ":", style0)
         , (showLevel level, levelStyle level)
-        ] <> if junk == 0 && S.null equipment then [] else
+        ] <>
         [ ("   Junk: ", style0)
-        , (twoCharNum junk <> "/" <> show (S.size equipment + 2), style0)
+        , (twoCharNum junk <> "/" <> show (S.size equipment + 1), style0)
         , ("%", junkStyle)
         ]
     statusStrs = intersperse ("   ", style0)
