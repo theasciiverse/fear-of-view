@@ -20,3 +20,8 @@ isMonster FastMonster         = True
 isMonster BasicMonster        = True
 isPlayer (Player _) = True
 isPlayer _          = False
+
+monsterDamage :: Creature -> Int
+monsterDamage CalmMonster = 1
+monsterDamage m | isMonster m = 2
+monsterDamage _ = 0

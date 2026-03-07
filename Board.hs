@@ -460,10 +460,10 @@ tryMoveCreature dir p bd
             Just (InflatedBalloon _) | isPlayer c ->
                 tryMoveCreature dir p' bd
             _ -> pure bd
-        let creatureDestroyed = maybe False isMonster $ creatures bd' M.!? p'
+        let creatureDamage = maybe 0 monsterDamage $ creatures bd' M.!? p'
             throughPainful = isPlayer c && not (ghostly bd) &&
                 (walls bd M.!? wp) `elem` [Just Hedge, Just BrokenWindow]
-            dmg = sum $ [2 | creatureDestroyed] <> [1 | throughPainful]
+            dmg = creatureDamage + sum [1 | throughPainful]
             modMove = modCreatures $ M.insert p' c . M.delete p
             modBalloon
                 | Just (InflatedBalloon charges) <- creatures bd' M.!? p'
