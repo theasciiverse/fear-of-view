@@ -103,9 +103,9 @@ text = text' . tp
     text' TSeeGem =
         "That looks powerful."
     text' TCollectItem =
-        "An item! Hit 1 then a direction to try to use it;"
+        "An item! Hit 1 then a direction to try to use it."
     text' TCollectItem2 =
-        "experiment to learn how to use each kind of item."
+        "Experiment to learn how to use each kind of item."
     text' TCollectGem =
         "Press 0 to activate the power here."
     text' TCollectScore =
