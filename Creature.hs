@@ -3,9 +3,9 @@ module Creature where
 data Creature
     = Player Int
     | SmartMonster
-    | GhostMonster
-    | CalmMonster
     | FastMonster
+    | CalmMonster
+    | GhostMonster
     | BasicMonster
     | InflatedBalloon Int
     deriving (Eq, Ord)
