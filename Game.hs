@@ -71,8 +71,8 @@ initLife = 7
 charmBonus = 2
 
 initCreatureSides, initWallSides :: Int
-initCreatureSides = 36
-initWallSides = 30
+initCreatureSides = 52
+initWallSides = 46
 
 baseCRF :: RF.RollFrom Creature
 baseCRF = RF.RollFrom initCreatureSides
@@ -82,13 +82,13 @@ baseLevels :: IM.IntMap BC.BoardConf
 baseLevels = IM.fromList
     [ (1, BC.BoardConf 1
         baseCRF
-        (RF.RollFrom initWallSides $ replicate 6 Hedge))
+        (RF.RollFrom initWallSides $ replicate 8 Hedge))
     , (2, BC.BoardConf 2
         baseCRF
-        (RF.RollFrom initWallSides $ replicate 6 BasicWall <> [Pillar]))
+        (RF.RollFrom initWallSides $ replicate 8 BasicWall <> [Pillar]))
     , (3, BC.BoardConf 3
         baseCRF
-        (RF.RollFrom initWallSides $ replicate 6 BasicWall <> [Window, Window]))
+        (RF.RollFrom initWallSides $ replicate 8 BasicWall <> [Window, Window]))
     ]
 
 new :: MonadIO m => m Game

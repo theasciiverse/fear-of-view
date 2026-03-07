@@ -743,7 +743,7 @@ doPhysics bd0
             = modConf (BC.modRolls decSides decSides) . setTimer 0 $ bd
         rollOver bd = bd
         decSides = RF.modSides (max 1 . (+ (-1)))
-        turnsPerSide = 16
+        turnsPerSide = 12
 
 addPower :: Bool -> Board -> Board
 addPower overUsable bd
