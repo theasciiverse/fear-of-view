@@ -526,9 +526,10 @@ grabItem d bd
     , let p' = p +^ P.dirPos d
     , Just item <- items bd M.!? p'
     , case item of
-        RollingOrb _ _ -> False
-        Gem _          -> False
-        _              -> True
+        RollingOrb _ _         -> False
+        Gem _                  -> False
+        ItemInvItem (Camera _) -> False
+        _                      -> True
     = collectItemsAt p' bd
     | otherwise = pure bd
 
