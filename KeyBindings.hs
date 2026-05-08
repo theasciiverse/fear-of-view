@@ -70,7 +70,9 @@ basicBindings =
     , ('\r', C.Accept)
     , ('\n', C.Accept)
     , ('\f', C.Redraw)
-    , (ctrl 'Z', C.Suspend)
+    -- XXX: disabling suspend, because it seems to be broken for no apparent
+    -- reason.
+    --, (ctrl 'Z', C.Suspend)
     , ('t', C.SkipTutorial)
     , ('T', C.SkipTutorial)
     , ('-', C.ToggleAscii)
