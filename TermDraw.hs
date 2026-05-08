@@ -468,7 +468,7 @@ drawLevelInfo bd = do
         keyExitDirs = exitsWith (KeyExit True)
         possibleExitDirs = exitDirs <> keyExitDirs <> exitsWith UnseenBoundary
     drawFound = sequence_
-        [ TM.drawGlyph win (CP.CPos (G.initCreatureSides - 3 + n) 1) gl
+        [ TM.drawGlyph win (CP.CPos (G.initWallSides + 3 + n) 1) gl
         | n <- [0..B.treasuresPerBoard-1]
         , let gl = maybe ((if n == B.treasuresPerBoard - 1 then bold else char) '?')
                 itemGlyph $ B.found bd `atMay` n

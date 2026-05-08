@@ -71,8 +71,8 @@ initLife = 7
 charmBonus = 2
 
 initCreatureSides, initWallSides :: Int
-initCreatureSides = 52
-initWallSides = 46
+initCreatureSides = 40
+initWallSides = 40
 
 baseCRF :: RF.RollFrom Creature
 baseCRF = RF.RollFrom initCreatureSides
