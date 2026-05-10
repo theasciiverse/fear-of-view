@@ -53,8 +53,8 @@ genDiffs :: BoardConf -> Rand StdGen BoardConfDiffs
 genDiffs bc = (M.fromList <$>) . forM P.dirs $ \d -> (d,) <$> genDiffDir d where
     genDiffDir P.DUp    = sequence [ addCreature SmartMonster, swapWall ]
     genDiffDir P.DDown  = sequence [ addCreature CalmMonster, swapWall ]
-    genDiffDir P.DRight = sequence [ addCreature FastMonster, addWall ]
-    genDiffDir P.DLeft  = sequence [ addCreature GhostMonster, addWall ]
+    genDiffDir P.DRight = sequence [ addCreature GhostMonster, addWall ]
+    genDiffDir P.DLeft  = sequence [ addCreature FastMonster, addWall ]
     addCreature = pure . Add . DiffableCreature
     addWall = pure . Add . DiffableWall $ if level bc == 1 then Hedge else BasicWall
     swapWall = do
