@@ -53,6 +53,7 @@ executable fearOfView
         Geometry
         Group
         Highscore
+        HighscoreV1
         HighscoreFile
         Item
         KeyBindings

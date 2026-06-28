@@ -192,6 +192,9 @@ powerTypeAt (P.Pos 2 1) = Pow.Foresight
 powerTypeAt (P.Pos 2 2) = Pow.Undo
 powerTypeAt _ = Pow.Heal -- impossible
 
+countPowers :: Board -> Int
+countPowers b = sum $ Pow.maxCharges <$> M.elems (powers b)
+
 treasureAt :: Board -> P.Pos -> Item
 treasureAt bd p@(P.Pos x y)
     | treasuresLeft bd == 1 = Gem $ powerTypeAt p

@@ -22,6 +22,7 @@ import qualified BoardConf              as BC
 import qualified Fov                    as F
 import qualified Game                   as G
 import qualified Highscore              as HS
+import qualified HighscoreV1            as HS1
 import qualified Inventory              as I
 import qualified Pos                    as P
 import qualified RollFrom               as RF
@@ -86,3 +87,5 @@ instance Serialise G.Game
 
 deriving instance Generic HS.Highscore
 instance Serialise HS.Highscore
+deriving instance Generic HS1.Highscore
+instance Serialise HS1.Highscore

@@ -175,6 +175,7 @@ highscore name game = HS.Highscore
     , HS.maxLevel = fix0 $ level game
     , HS.equipment = equipment game
     , HS.name = name
+    , HS.gems = B.countPowers $ board game
     }
     where
     fix0 0 = 3

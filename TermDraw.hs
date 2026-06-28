@@ -522,14 +522,16 @@ drawMainScreen game = do
             , ("  ", style0)
             , (twoCharNum (HS.maxRound hs) <> ":", style0)
             , let lev = HS.maxLevel hs in (showLevel lev, levelStyle lev)
+            , ("  ", style0)
+            , let n = HS.gems hs in (twoCharNum n <> "*", CStyle white $ n > 0)
+            , ("  ", style0)
             ] <>
-            [ ("  ", style0) ] <>
             [ if e `elem` HS.equipment hs
                 then (take 1 $ show e, equipStyle e)
                 else ("-", style0)
             | e <- allEquipment ]
-        scoreX showName = min ((scrW - l) `div` 2) (scrW - l - 1 - aKeyL)
-            where l = sum $ [length "99   99~  99:C"]
+        scoreX showName = min ((scrW - l) `div` 2) (scrW - l - 2 - aKeyL)
+            where l = sum $ [length "99   99~  99:C  99*"]
                     <> [11 | showName] <> [2 + length allEquipment]
         additionalKeys =
             [ " More keys:" ]
@@ -564,6 +566,7 @@ drawMainScreen game = do
             [ ("  Name    ", CStyle cyan True) | someNamed ] <>
             [ ("Score ", scoreStyle)
             , ("Level ", style0)
+            , ("Gems ", style0)
             , ("Equip", style0) ]
         sequence_ [ drawHS someNamed (10+i) (HSRank $ 1+i) hs | (i,hs) <- zip [0..] hss ]
 
