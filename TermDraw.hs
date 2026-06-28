@@ -426,6 +426,9 @@ drawMessage game = do
             _                 -> ("", style0)
     TM.drawStr win style (CP.CPos 0 0) text
 
+delSideGlyph :: Glyph
+delSideGlyph = Glyph 'x' $ CStyle red False
+
 drawLevelInfo :: TM.TermM m => B.Board -> m ()
 drawLevelInfo bd = do
     drawRoll 0 (BC.creatureRoll bc) G.initCreatureSides creatureGlyph
@@ -438,8 +441,8 @@ drawLevelInfo bd = do
     drawRoll :: TM.TermM m => Int -> RF.RollFrom a -> Int -> (a -> Glyph) -> m ()
     drawRoll m roll initSides f = sequence_ $
         [ TM.drawGlyph win (CP.CPos n m) $ maybe nullGlyph f (RF.vals roll `atMay` n)
-        | n <- [0 .. RF.sides roll - 1]
-        ] <> [ TM.drawGlyph win (CP.CPos initSides m) $ char ']' ]
+        | n <- [0 .. RF.sides roll - 1] ]
+        <> [ TM.drawGlyph win (CP.CPos n m) delSideGlyph | n <- [RF.sides roll .. initSides - 1] ]
     bc = B.conf bd
     diffs = B.diffs bd
     drawDiffsLine y = TM.drawStr win style0 (CP.CPos 0 y) introStr >> sequence_
@@ -591,7 +594,7 @@ tutBox = tutBox' where
     tutBox' T.CollectGem = Just (invOffset <> CP.CPos 0 10, [Glyph '0' $ CStyle red True])
     tutBox' T.CollectScore = Just (statusOffset <> CP.CPos 20 1, (char <$> (" 1/" <> show G.maxScore)) <> [Glyph '~' scoreStyle])
     tutBox' (T.Hurt l ml) = Just (statusOffset <> CP.CPos 6 1, char <$> twoCharNum l <> "/" <> show ml)
-    tutBox' T.Timer = Just (levelInfoOffset <> CP.CPos (G.initCreatureSides - 4) 0, char <$> "-   ]")
+    tutBox' T.Timer = Just (levelInfoOffset <> CP.CPos (G.initCreatureSides - 3) 0, replicate 3 delSideGlyph)
     tutBox' T.MustBreak = Just (levelInfoOffset <> CP.CPos 0 2, char <$> "Alarm:")
     tutBox' _                  = Nothing
     winOffset win = CP.CPos x y where WinDim x y _ _ = geometry M.! win
