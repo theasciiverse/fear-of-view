@@ -744,7 +744,7 @@ doPhysics bd0
         rollOrb bd' _ = pure bd'
     tickTimer = rollOver . modTimer (+1) where
         rollOver bd | timer bd >= turnsPerSide
-            = modConf (BC.modRolls decSides decSides) . setTimer 0 $ bd
+            = modConf (BC.modRolls id decSides) . setTimer 0 $ bd
         rollOver bd = bd
         decSides = RF.modSides (max 1 . (+ (-1)))
         turnsPerSide = 10

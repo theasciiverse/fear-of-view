@@ -468,7 +468,7 @@ triggeredBeats game = S.unions . S.map triggered $ unseenBeats game where
     triggered T.TCollectItem2 | 1 `M.member` I.invItems (inventory game) = sng T.CollectItem2
     triggered T.TCollectGem | p:_ <- B.playerPoss bd, p `M.member` B.powers bd = sng T.CollectGem
     triggered T.TCollectScore | score game == 1 = sng T.CollectScore
-    triggered T.TTimer | (RF.sides . BC.creatureRoll $ B.conf bd) < initCreatureSides - 2 = sng T.Timer
+    triggered T.TTimer | (RF.sides . BC.creatureRoll $ B.conf bd) < initCreatureSides - 4 = sng T.Timer
     triggered T.TMustBreak | p:_ <- B.playerPoss bd
         , any ((== Just (Exit True)) . (B.exits bd M.!?) . P.wposInDir p) P.dirs
         = S.singleton T.MustBreak

@@ -113,6 +113,6 @@ text = text' . tp
     text' THurt =
         "That hurt! Watch where you walk."
     text' TTimer =
-        "It gets more dangerous here the longer you stay."
+        "You feel the walls closing in."
     text' TTutEnd =
         "That was the last hint. You're on your own now."

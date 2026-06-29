@@ -594,7 +594,7 @@ tutBox = tutBox' where
     tutBox' T.CollectGem = Just (invOffset <> CP.CPos 0 10, [Glyph '0' $ CStyle red True])
     tutBox' T.CollectScore = Just (statusOffset <> CP.CPos 20 1, (char <$> (" 1/" <> show G.maxScore)) <> [Glyph '~' scoreStyle])
     tutBox' (T.Hurt l ml) = Just (statusOffset <> CP.CPos 6 1, char <$> twoCharNum l <> "/" <> show ml)
-    tutBox' T.Timer = Just (levelInfoOffset <> CP.CPos (G.initCreatureSides - 3) 0, replicate 3 delSideGlyph)
+    tutBox' T.Timer = Just (levelInfoOffset <> CP.CPos (G.initWallSides - 5) 1, replicate 3 delSideGlyph)
     tutBox' T.MustBreak = Just (levelInfoOffset <> CP.CPos 0 2, char <$> "Alarm:")
     tutBox' _                  = Nothing
     winOffset win = CP.CPos x y where WinDim x y _ _ = geometry M.! win
