@@ -223,14 +223,20 @@ nextRound = do
     endTurn
 
 enterNewBoard :: MonadState Game m => Int -> Bool -> P.WPos -> m ()
-enterNewBoard lf doRecharge e = do
-    powers <- gets $ (if doRecharge then M.map Pow.recharge else id) . B.powers . board
-    sidesC <- gets $ if doRecharge then const initCreatureSides else RF.sides . BC.creatureRoll . B.conf . board
-    sidesW <- gets $ if doRecharge then const initWallSides else RF.sides . BC.wallRoll . B.conf . board
+enterNewBoard lf newRound e = do
+    powers <- gets $ (if newRound then M.map Pow.recharge else id) . B.powers . board
+    sidesC <- gets $ if newRound then const initCreatureSides else RF.sides . BC.creatureRoll . B.conf . board
+    sidesW <- gets $ if newRound then const initWallSides else RF.sides . BC.wallRoll . B.conf . board
     bc <- gets $ BC.modRolls (RF.setSides sidesC) (RF.setSides sidesW) . currentLevelBC
     diffs <- evalR $ BC.genDiffs bc
     is <- gets roundItems
-    modify . setBoard $ (B.enterAt lf e $ B.new bc) { B.powers = powers, B.diffs = diffs, B.possItems = is}
+    statuses <- if newRound then pure M.empty else gets $ B.statuses . board
+    modify . setBoard $ (B.enterAt lf e $ B.new bc)
+        { B.powers = powers
+        , B.diffs = diffs
+        , B.possItems = is
+        , B.statuses = statuses
+        }
     setFov
     where
     currentLevelBC game = fromMaybe BC.emptyBoardConf . (IM.!? level game) $ levels game
