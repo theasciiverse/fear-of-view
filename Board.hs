@@ -303,7 +303,7 @@ seeBoundary hasKey bd = do
 
 fov, playerFov :: Board -> F.Fov
 fov bd = addOrbFovs plFov plFov where
-    plFov = fovs $ playerPoss bd <> cameraPoss bd
+    plFov = fovs (playerPoss bd <> cameraPoss bd) `F.union` ghostFovs
     fovs = F.unions . map (fovAt bd)
     addOrbFovs :: F.Fov -> F.Fov -> F.Fov
     addOrbFovs v news
@@ -315,6 +315,12 @@ fov bd = addOrbFovs plFov plFov where
             isOrb (RollingOrb _ _)  = True
             isOrb _                 = False
         in addOrbFovs (v `F.union` orbFovs) (orbFovs F.\\ v)
+    -- We can see upgraded ghosts through walls
+    ghostPoss | ppos:_ <- playerPoss bd
+        = S.filter ((<= 2) . P.distSquared ppos) . M.keysSet . M.filter (== GhostMonster True) $ creatures bd
+        | otherwise = S.empty
+    ghostFovs = F.Fov ghostPoss S.empty
+
 playerFov bd = F.unions . map (fovAt bd) $ playerPoss bd
 
 
