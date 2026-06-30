@@ -301,7 +301,7 @@ seeBoundary hasKey bd = do
     pdist | ppos:_ <- playerPoss bd = P.distSquaredToWPos ppos
         | otherwise = const 0
 
-fov, playerFov :: Board -> F.Fov
+fov :: Board -> F.Fov
 fov bd = addOrbFovs plFov plFov where
     plFov = fovs (playerPoss bd <> cameraPoss bd) `F.union` ghostFovs
     fovs = F.unions . map (fovAt bd)
@@ -321,7 +321,7 @@ fov bd = addOrbFovs plFov plFov where
         | otherwise = S.empty
     ghostFovs = F.Fov ghostPoss S.empty
 
-playerFov bd = F.unions . map (fovAt bd) $ playerPoss bd
+-- playerFov bd = F.unions . map (fovAt bd) $ playerPoss bd
 
 
 playerPoss :: Board -> [ P.Pos ]
@@ -445,7 +445,7 @@ creatureCanTryMove bd c p dir =
         [ inBounds p'
         , maybe True isPlayer $ creatures bd M.!? p'
         , throughWall bd c $ walls bd M.!? wp
-        , not (isSmart c) || p' `S.member` F.pFov (playerFov bd)
+        , not (isSmart c) || p' `S.member` F.pFov (fov bd)
         ]
 
 enterAt :: Int -> P.WPos -> Board -> Board
@@ -623,7 +623,7 @@ npcsAct bd0
             | SmartMonster _ <- c, not $ null smartDirs = lift $ randElem smartDirs
             | otherwise = lift $ randElem availableDirs
         availableDirs = filter (\d -> creatureCanMove bd BasicMonster p d && creatureCanTryMove bd BasicMonster p d) P.dirs
-        smartDirs = filter (\d -> (p +^ P.dirPos d) `S.member` F.pFov (playerFov bd)) availableDirs
+        smartDirs = filter (\d -> (p +^ P.dirPos d) `S.member` F.pFov (fov bd)) availableDirs
 
 
     pathAlg BasicMonster     = chaseDir
