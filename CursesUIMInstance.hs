@@ -35,7 +35,7 @@ instance UIM.UIMonad UIM where
                 | let cols =
                         [ CH.white, CH.red, CH.green, CH.yellow
                         , CH.blue, CH.magenta, CH.cyan, CH.black]
-                , c <- [CH.black,CH.blue,CH.red,CH.yellow]
+                , c <- [CH.black,CH.blue,CH.red,CH.magenta]
                 ]
         modify $ \s -> s {dispCPairs = cpairs}
         setBkgrnd

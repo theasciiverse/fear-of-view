@@ -11,10 +11,10 @@ magenta = 5
 cyan = 6
 black = 7
 
-onBlue, onRed, onYellow :: ColPair -> ColPair
+onBlue, onRed, onMagenta :: ColPair -> ColPair
 onBlue = (+8) . (`mod` 8)
 onRed = (+16) . (`mod` 8)
-onYellow = (+24) . (`mod` 8)
+onMagenta = (+24) . (`mod` 8)
 
 data CStyle = CStyle { cstyleCol :: ColPair, cstyleBold :: Bool }
 style0, styleBold :: CStyle

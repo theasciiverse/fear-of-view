@@ -105,10 +105,10 @@ drawStatus (G.Game { G.maxLife = maxLife, G.score = score, G.level = level, G.ro
         | status@(stat,n) <- M.assocs statuses
         , n > 0 ]
     statStyle (B.Dazzled,_) = CStyle cyan True
-    statStyle (B.Ghost,_) = style0
+    statStyle (B.Ghost,_) = styleBold
     statStyle (B.Smoke,_) = CStyle blue True
     statStyle (B.Haste,n) = CStyle (if n `mod` 2 == 1 then red else yellow) True
-    statStyle (B.Foresight,_) = styleBold
+    statStyle (B.Foresight,_) = CStyle yellow False
 
 exitChar :: Bool -> P.Dir -> Char
 exitChar True = const 'x'
@@ -200,15 +200,7 @@ creatureGlyph FastMonster     = Glyph 'f' $ CStyle magenta True
 creatureGlyph (InflatedBalloon charges) = Glyph '0' . CStyle magenta $ charges > 0
 
 itemGlyph :: Item -> Glyph
-itemGlyph (Gem pow)             = Glyph '*' $ case pow of
-    Pow.Heal      -> CStyle green True
-    Pow.Dazzle    -> CStyle cyan True
-    Pow.Smoke     -> CStyle blue True
-    Pow.Haste     -> CStyle yellow True
-    Pow.Teleport  -> CStyle green False
-    Pow.Undo      -> CStyle magenta True
-    Pow.Ghost     -> CStyle white False
-    Pow.Foresight -> CStyle white True
+itemGlyph (Gem pow)             = Glyph '*' $ powerStyle pow
 itemGlyph Potion                = Glyph '!' $ CStyle green True
 itemGlyph ScoreTreasure         = Glyph '~' scoreStyle
 itemGlyph Junk                  = Glyph '%' junkStyle
@@ -216,6 +208,22 @@ itemGlyph (UmbrellaHandle d ch) = Glyph (if d `elem` [P.DUp, P.DDown] then '|' e
 itemGlyph CameraBoxed           = Glyph ')' $ CStyle cyan False
 itemGlyph (RollingOrb _ _)      = Glyph 'o' $ CStyle cyan False
 itemGlyph (ItemInvItem e)       = invItemGlyph e
+
+powerGlyph :: Pow.Power -> Glyph
+powerGlyph pow = case Pow.charges pow of
+    0 | Pow.overUsable pow -> Glyph ',' . powerStyle $ Pow.tp pow
+    0                      -> Glyph ',' style0
+    _                      -> Glyph '"' $ powerStyle $ Pow.tp pow
+
+powerStyle :: Pow.PowerType -> CStyle
+powerStyle Pow.Heal      = CStyle green True
+powerStyle Pow.Dazzle    = CStyle cyan True
+powerStyle Pow.Smoke     = CStyle blue True
+powerStyle Pow.Haste     = CStyle red True
+powerStyle Pow.Teleport  = CStyle magenta False
+powerStyle Pow.Undo      = CStyle magenta True
+powerStyle Pow.Ghost     = CStyle white True
+powerStyle Pow.Foresight = CStyle yellow False
 
 wallGlyphVert :: Wall -> Glyph
 wallGlyphVert = \case
@@ -298,14 +306,10 @@ drawAlertedBoard AlertedBoard{ base = bd, creatureMoves = cmvs, itemMoves = imvs
         biGlyph gl = (Just gl, Just gl)
         powerBG :: P.Pos -> Glyph -> Glyph
         powerBG p
-            | Just pow <- B.powers bd M.!? p, Pow.charges pow > 0 = modColour onRed
+            | Just pow <- B.powers bd M.!? p, Pow.charges pow > 0 = modColour onMagenta
             -- | Just pow <- B.powers bd M.!? p, Pow.overUsable pow = modColour onYellow
             | otherwise = id
         powers = (Nothing,) . Just . powerGlyph <$> B.powers bd
-        powerGlyph pow = Glyph '"' $ case True of
-            _ | Pow.charges pow > 0 -> CStyle red True
-            _ | Pow.overUsable pow  -> equipStyle Siphon
-            _                       -> style0
         creatures = (,Nothing) . Just . creatureGlyph' <$> B.creatures bd
         creatureGlyph' (Player life) = Glyph '@' $ (lifeStyle life) { cstyleBold = not $ B.ghostly bd }
         creatureGlyph' c = creatureGlyph c
@@ -392,10 +396,13 @@ drawInv sel preserve highlightEmpty (I.Inventory inv) pow = do
                     | otherwise = white
                 b = sel == Just slot
         ] <>
-        [ str 0 (length I.slots + 2) style $ "0 \" " <> show tp <> " " <> show charges <> "/" <> show maxCharges
-        | Pow.Power tp charges maxCharges overUsable <- maybeToList pow
-        , let style | overUsable && charges == 0 = equipStyle Siphon
-                | otherwise = CStyle red $ charges > 0
+        [ str 0 y style powStr >> bang
+        | p@(Pow.Power tp charges maxCharges overUsable) <- maybeToList pow
+        , let Glyph c style = powerGlyph p
+        , let y = length I.slots + 2
+        , let powStr = "0 " <> [c] <> " " <> show tp <> " " <> show charges <> "/" <> show maxCharges
+        , let bang | overUsable && charges == 0 = str (length powStr) y (equipStyle Siphon) "!"
+                | otherwise = pure ()
         ]
 
 equipStyle :: Equipment -> CStyle
@@ -526,7 +533,7 @@ drawMainScreen game = do
             , (twoCharNum (HS.maxRound hs) <> ":", style0)
             , let lev = HS.maxLevel hs in (showLevel lev, levelStyle lev)
             , ("  ", style0)
-            , let n = HS.gems hs in (twoCharNum n <> "*", CStyle white $ n > 0)
+            , let n = HS.gems hs in (twoCharNum n <> "*", CStyle magenta False)
             , ("  ", style0)
             ] <>
             [ if e `elem` HS.equipment hs
@@ -569,7 +576,7 @@ drawMainScreen game = do
             [ ("  Name    ", CStyle cyan True) | someNamed ] <>
             [ ("Score ", scoreStyle)
             , ("Level ", style0)
-            , ("Gems ", style0)
+            , ("Gems ", CStyle magenta False)
             , ("Equip", style0) ]
         sequence_ [ drawHS someNamed (10+i) (HSRank $ 1+i) hs | (i,hs) <- zip [0..] hss ]
 
