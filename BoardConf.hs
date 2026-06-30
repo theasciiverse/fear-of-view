@@ -51,11 +51,18 @@ apply bcd d = flip (foldr apply') (fromMaybe [] $ bcd M.!? d) where
 
 genDiffs :: BoardConf -> Rand StdGen BoardConfDiffs
 genDiffs bc = (M.fromList <$>) . forM P.dirs $ \d -> (d,) <$> genDiffDir d where
-    genDiffDir P.DUp    = sequence [ addCreature SmartMonster, swapWall ]
-    genDiffDir P.DDown  = sequence [ addCreature CalmMonster, swapWall ]
-    genDiffDir P.DRight = sequence [ addCreature GhostMonster, addWall ]
-    genDiffDir P.DLeft  = sequence [ addCreature FastMonster, addWall ]
-    addCreature = pure . Add . DiffableCreature
+    genDiffDir d    = sequence [ doCreature $ dirCTp d, doWall ]
+    dirCTp P.DUp    = SmartMonster
+    dirCTp P.DDown  = CalmMonster
+    dirCTp P.DRight = GhostMonster
+    dirCTp P.DLeft  = FastMonster
+    doCreature :: (Bool -> Creature) -> Rand StdGen (RollFromDiff Diffable)
+    doCreature cTp = randElemUnsafe $
+        [ Add . DiffableCreature $ cTp False ] <>
+        [ Swap (DiffableCreature $ cTp False) (DiffableCreature $ cTp True)
+        | cTp False `elem` RF.vals (creatureRoll bc)
+        ]
+    doWall = join $ randElemUnsafe [ addWall, swapWall ]
     addWall = pure . Add . DiffableWall $ if level bc == 1 then Hedge else BasicWall
     swapWall = do
         swapOut <- randElem . filter upgradableWall $ RF.vals (wallRoll bc)

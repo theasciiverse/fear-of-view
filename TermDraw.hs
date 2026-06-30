@@ -191,12 +191,16 @@ lifeStyle = \case
     _                   -> CStyle green False
 
 creatureGlyph :: Creature -> Glyph
-creatureGlyph (Player life)   = Glyph '@' $ lifeStyle life
-creatureGlyph BasicMonster    = Glyph 'm' $ CStyle yellow False
-creatureGlyph CalmMonster     = Glyph 'p' $ CStyle blue True
-creatureGlyph GhostMonster    = Glyph 'g' $ CStyle white True
-creatureGlyph SmartMonster    = Glyph 's' $ CStyle red True
-creatureGlyph FastMonster     = Glyph 'f' $ CStyle magenta True
+creatureGlyph (Player life)             = Glyph '@' $ lifeStyle life
+creatureGlyph BasicMonster              = Glyph 'm' $ CStyle yellow False
+creatureGlyph (CalmMonster False)       = Glyph 'p' $ CStyle blue True
+creatureGlyph (CalmMonster True)        = Glyph 'P' $ CStyle blue True
+creatureGlyph (GhostMonster False)      = Glyph 'g' $ CStyle white True
+creatureGlyph (GhostMonster True)       = Glyph 'G' $ CStyle white True
+creatureGlyph (SmartMonster False)      = Glyph 's' $ CStyle red True
+creatureGlyph (SmartMonster True)       = Glyph 'S' $ CStyle red True
+creatureGlyph (FastMonster False)       = Glyph 'f' $ CStyle magenta True
+creatureGlyph (FastMonster True)        = Glyph 'F' $ CStyle magenta True
 creatureGlyph (InflatedBalloon charges) = Glyph '0' . CStyle magenta $ charges > 0
 
 itemGlyph :: Item -> Glyph

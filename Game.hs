@@ -75,8 +75,8 @@ initCreatureSides = 40
 initWallSides = 40
 
 baseCRF :: RF.RollFrom Creature
-baseCRF = RF.RollFrom initCreatureSides
-    [SmartMonster, GhostMonster, CalmMonster, FastMonster]
+baseCRF = RF.RollFrom initCreatureSides $
+    ($ False) <$> [SmartMonster, GhostMonster, CalmMonster, FastMonster]
 
 baseLevels :: IM.IntMap BC.BoardConf
 baseLevels = IM.fromList

@@ -413,7 +413,7 @@ movePlayers dir bd = foldM (flip $ tryMoveCreature dir) bd (playerPoss bd)
 
 throughWall :: Board -> Creature -> Maybe Wall -> Bool
 throughWall _ _ Nothing                     = True
-throughWall _ GhostMonster _                = True
+throughWall _ (GhostMonster _) _                = True
 throughWall bd (Player _) _ | ghostly bd        = True
 throughWall _ (Player _) (Just Hedge)           = True
 throughWall _ (InflatedBalloon _) (Just _)  = False
@@ -433,11 +433,13 @@ creatureCanTryMove :: Board -> Creature -> P.Pos -> P.Dir -> Bool
 creatureCanTryMove bd c p dir =
     let p' = P.dirPos dir +^ p
         wp = P.wposInDir p dir
+        isSmart (SmartMonster _) = True
+        isSmart _                = False
     in and
         [ inBounds p'
         , maybe True isPlayer $ creatures bd M.!? p'
         , throughWall bd c $ walls bd M.!? wp
-        , c /= SmartMonster || p' `S.member` F.pFov (playerFov bd)
+        , not (isSmart c) || p' `S.member` F.pFov (playerFov bd)
         ]
 
 enterAt :: Int -> P.WPos -> Board -> Board
@@ -606,26 +608,26 @@ npcsAct bd0
         -- forced moves ignore powers of GhostMonster and SmartMonster,
         -- though SmartMonster still avoids moving into sight when possible.
         forceRand :: Maybe P.Dir -> WriterT [Alert] (Rand StdGen) (Maybe P.Dir)
-        forceRand md | c == CalmMonster = pure md
+        forceRand md | CalmMonster _ <- c = pure md
         forceRand (Just dir) | not (creatureCanMove bd c p dir) = randAvailableDir
-        forceRand Nothing | c == SmartMonster = randAvailableDir
+        forceRand Nothing | SmartMonster _ <- c = randAvailableDir
         forceRand md = pure md
         randAvailableDir
-            | c == SmartMonster, not $ null smartDirs = lift $ randElem smartDirs
+            | SmartMonster _ <- c, not $ null smartDirs = lift $ randElem smartDirs
             | otherwise = lift $ randElem availableDirs
         availableDirs = filter (\d -> creatureCanMove bd BasicMonster p d && creatureCanTryMove bd BasicMonster p d) P.dirs
         smartDirs = filter (\d -> (p +^ P.dirPos d) `S.member` F.pFov (playerFov bd)) availableDirs
 
 
-    pathAlg BasicMonster = chaseDir
-    pathAlg CalmMonster  = chaseDir
-    pathAlg GhostMonster = chaseDir
-    pathAlg FastMonster  = chaseDir
-    pathAlg SmartMonster = findPathDir
-    pathAlg _            = \_ _ _ _ -> pure Nothing
+    pathAlg BasicMonster     = chaseDir
+    pathAlg (CalmMonster _)  = chaseDir
+    pathAlg (GhostMonster _) = chaseDir
+    pathAlg (FastMonster _)  = chaseDir
+    pathAlg (SmartMonster _) = findPathDir
+    pathAlg _                = \_ _ _ _ -> pure Nothing
 
-    isFast FastMonster = True
-    isFast _           = False
+    isFast (FastMonster _) = True
+    isFast _               = False
 
 tryUseInvItem :: InvItem -> P.Dir -> Board -> WriterT [Alert] Maybe Board
 tryUseInvItem e d bd
