@@ -471,7 +471,7 @@ drawLevelInfo bd = do
         , Just rdfs <- [diffs M.!? dir]
         ]
         where
-        introStr = "Alarm:  "
+        introStr = "Seal:  "
         draw x = TM.drawGlyph win (CP.CPos x y)
         rdfGlyph (BC.Add (BC.DiffableCreature c))    = creatureGlyph c
         rdfGlyph (BC.Swap _ (BC.DiffableCreature c)) = creatureGlyph c
@@ -602,11 +602,11 @@ tutBox = tutBox' where
     tutBox' (T.SeeJunk p) = Just (boardOffset <> posCPosR p, [itemGlyph Junk])
     tutBox' (T.SeeGem p) = Just (boardOffset <> posCPosR p, [itemGlyph . Gem $ B.powerTypeAt p])
     tutBox' T.CollectItem = Just (invOffset <> CP.CPos 0 1, [char '1'])
-    tutBox' T.CollectGem = Just (invOffset <> CP.CPos 0 10, [Glyph '0' $ CStyle red True])
+    tutBox' (T.CollectGem pTp) = Just (invOffset <> CP.CPos 0 10, [Glyph '0' $ powerStyle pTp])
     tutBox' T.CollectScore = Just (statusOffset <> CP.CPos 20 1, (char <$> (" 1/" <> show G.maxScore)) <> [Glyph '~' scoreStyle])
     tutBox' (T.Hurt l ml) = Just (statusOffset <> CP.CPos 6 1, char <$> twoCharNum l <> "/" <> show ml)
     tutBox' T.Timer = Just (levelInfoOffset <> CP.CPos (G.initWallSides - 5) 1, replicate 3 delSideGlyph)
-    tutBox' T.MustBreak = Just (levelInfoOffset <> CP.CPos 0 2, char <$> "Alarm:")
+    tutBox' T.MustBreak = Just (levelInfoOffset <> CP.CPos 0 2, char <$> "Seal:")
     tutBox' _                  = Nothing
     winOffset win = CP.CPos x y where WinDim x y _ _ = geometry M.! win
     boardOffset = winOffset BoardWin

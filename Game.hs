@@ -472,12 +472,12 @@ triggeredBeats game = S.unions . S.map triggered $ unseenBeats game where
     triggered T.THurt | B.life bd < maxLife game = sng $ T.Hurt (B.life bd) (maxLife game)
     triggered T.TCollectItem | 1 `M.member` I.invItems (inventory game) = sng T.CollectItem
     triggered T.TCollectItem2 | 1 `M.member` I.invItems (inventory game) = sng T.CollectItem2
-    triggered T.TCollectGem | p:_ <- B.playerPoss bd, p `M.member` B.powers bd = sng T.CollectGem
+    triggered T.TCollectGem | p:_ <- B.playerPoss bd, Just pow <- B.powers bd M.!? p = sng . T.CollectGem $ Pow.tp pow
     triggered T.TCollectScore | score game == 1 = sng T.CollectScore
     triggered T.TTimer | (RF.sides . BC.creatureRoll $ B.conf bd) < initCreatureSides - 4 = sng T.Timer
     triggered T.TMustBreak | p:_ <- B.playerPoss bd
         , any ((== Just (Exit True)) . (B.exits bd M.!?) . P.wposInDir p) P.dirs
-        = S.singleton T.MustBreak
+        = sng T.MustBreak
     triggered T.TTutEnd | S.size (unseenBeats game) == 1 = sng T.TutEnd
     triggered _ = S.empty
     trappedDir p dir = or [ not $ B.inBounds p'

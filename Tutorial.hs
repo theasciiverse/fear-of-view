@@ -2,6 +2,7 @@ module Tutorial where
 
 import           Creature
 import           Item
+import qualified Power    as Pow
 
 import qualified Pos      as P
 
@@ -13,7 +14,7 @@ data Beat
     | Hurt Int Int
     | CollectItem
     | CollectItem2
-    | CollectGem
+    | CollectGem Pow.PowerType
     | CollectScore
     | SeeMonster P.Pos Creature
     | SeeItem P.Pos Item
@@ -64,7 +65,7 @@ tp (SeeGem _)       = TSeeGem
 tp MustBreak        = TMustBreak
 tp CollectItem      = TCollectItem
 tp CollectItem2     = TCollectItem2
-tp CollectGem       = TCollectGem
+tp (CollectGem _)   = TCollectGem
 tp CollectScore     = TCollectScore
 tp (Hurt _ _)       = THurt
 tp Timer            = TTimer
@@ -87,31 +88,31 @@ text = text' . tp
     text' TTrapped =
         "Trapped! You can't rest, but can walk into a wall."
     text' TSeeMonster =
-        "That's something you'd rather not see..."
+        "Something you'd rather not see, still less touch."
     text' TSeeExit =
         "You found the way out of here, at last."
     text' TMustBreak =
-        "Breaking the seal will be noisy, but necessary."
+        "You must break the seal, despite the consequences."
     text' TSeeItem =
         "Why are things always in the last place you look?"
     text' TSeePotion =
-        "That looks refreshing."
+        "A drink? That would make you feel better."
     text' TSeeScore =
         "This is just what you're looking for."
     text' TSeeJunk =
         "A load of junk. Maybe you could salvage something."
     text' TSeeGem =
-        "That looks powerful."
+        "You think you see a shining gemstone."
     text' TCollectItem =
         "An item! Hit 1 then a direction to try to use it."
     text' TCollectItem2 =
         "Experiment to learn how to use each kind of item."
     text' TCollectGem =
-        "Press 0 to activate the power here."
+        "The gem released a power. Press 0 to activate it."
     text' TCollectScore =
         "Enough of these, and you can get out of here!"
     text' THurt =
-        "That hurt! Watch where you walk."
+        "Watch where you walk."
     text' TTimer =
         "You feel the walls closing in."
     text' TTutEnd =
