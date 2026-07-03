@@ -23,7 +23,7 @@ data Beat
     | SeeJunk P.Pos
     | SeeGem P.Pos
     | SeeExit P.WPos
-    | MustBreak
+    | MustBreak P.WPos
     | Timer
     | TutEnd
     deriving (Eq, Ord)
@@ -62,7 +62,7 @@ tp (SeePotion _)    = TSeePotion
 tp (SeeScore _)     = TSeeScore
 tp (SeeJunk _)      = TSeeJunk
 tp (SeeGem _)       = TSeeGem
-tp MustBreak        = TMustBreak
+tp (MustBreak _)    = TMustBreak
 tp CollectItem      = TCollectItem
 tp CollectItem2     = TCollectItem2
 tp (CollectGem _)   = TCollectGem

@@ -456,7 +456,9 @@ drawLevelInfo bd = do
         <> [ TM.drawGlyph win (CP.CPos n m) delSideGlyph | n <- [RF.sides roll .. initSides - 1] ]
     bc = B.conf bd
     diffs = B.diffs bd
-    drawDiffsLine y = TM.drawStr win style0 (CP.CPos 0 y) introStr >> sequence_
+    drawDiffsLine y
+        | null possibleExitDirs = pure ()
+        | otherwise = TM.drawStr win style0 (CP.CPos 0 y) introStr >> sequence_
         [ do
             draw b . char' $ exitChar False dir
             draw (b+1) (char ':')
@@ -596,6 +598,7 @@ tutBox = tutBox' where
     tutBox' (T.Trapped p lf) = Just (boardOffset <> posCPosL p, [creatureGlyph $ Player lf])
     tutBox' (T.SeeMonster p c) = Just (boardOffset <> posCPosL p, [creatureGlyph c])
     tutBox' (T.SeeExit wp) = Just (boardOffset <> wposCPos wp, [bold . exitChar True $ P.exitDir wp])
+    tutBox' (T.MustBreak wp) = Just (boardOffset <> wposCPos wp, [bold . exitChar True $ P.exitDir wp])
     tutBox' (T.SeeItem p i) = Just (boardOffset <> posCPosR p, [itemGlyph i])
     tutBox' (T.SeePotion p) = Just (boardOffset <> posCPosR p, [itemGlyph Potion])
     tutBox' (T.SeeScore p) = Just (boardOffset <> posCPosR p, [itemGlyph ScoreTreasure])
@@ -603,10 +606,10 @@ tutBox = tutBox' where
     tutBox' (T.SeeGem p) = Just (boardOffset <> posCPosR p, [itemGlyph . Gem $ B.powerTypeAt p])
     tutBox' T.CollectItem = Just (invOffset <> CP.CPos 0 1, [char '1'])
     tutBox' (T.CollectGem pTp) = Just (invOffset <> CP.CPos 0 10, [Glyph '0' $ powerStyle pTp])
-    tutBox' T.CollectScore = Just (statusOffset <> CP.CPos 20 1, (char <$> (" 1/" <> show G.maxScore)) <> [Glyph '~' scoreStyle])
-    tutBox' (T.Hurt l ml) = Just (statusOffset <> CP.CPos 6 1, char <$> twoCharNum l <> "/" <> show ml)
-    tutBox' T.Timer = Just (levelInfoOffset <> CP.CPos (G.initWallSides - 5) 1, replicate 3 delSideGlyph)
-    tutBox' T.MustBreak = Just (levelInfoOffset <> CP.CPos 0 2, char <$> "Seal:")
+    tutBox' T.CollectScore = Just (statusOffset <> CP.CPos 21 1, (char <$> ("1/" <> show G.maxScore)) <> [Glyph '~' scoreStyle])
+    tutBox' (T.Hurt l ml) = Just (statusOffset <> CP.CPos 7 1, char <$> show l <> "/" <> show ml)
+    tutBox' T.Timer = Just (levelInfoOffset <> CP.CPos (G.initWallSides - 5) 1, replicate 5 delSideGlyph)
+    --tutBox' T.MustBreak = Just (levelInfoOffset <> CP.CPos 0 2, char <$> "Seal:")
     tutBox' _                  = Nothing
     winOffset win = CP.CPos x y where WinDim x y _ _ = geometry M.! win
     boardOffset = winOffset BoardWin

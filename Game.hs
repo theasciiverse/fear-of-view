@@ -474,10 +474,10 @@ triggeredBeats game = S.unions . S.map triggered $ unseenBeats game where
     triggered T.TCollectItem2 | 1 `M.member` I.invItems (inventory game) = sng T.CollectItem2
     triggered T.TCollectGem | p:_ <- B.playerPoss bd, Just pow <- B.powers bd M.!? p = sng . T.CollectGem $ Pow.tp pow
     triggered T.TCollectScore | score game == 1 = sng T.CollectScore
-    triggered T.TTimer | (RF.sides . BC.creatureRoll $ B.conf bd) < initCreatureSides - 4 = sng T.Timer
+    triggered T.TTimer | (RF.sides . BC.wallRoll $ B.conf bd) < initWallSides - 4 = sng T.Timer
     triggered T.TMustBreak | p:_ <- B.playerPoss bd
-        , any ((== Just (Exit True)) . (B.exits bd M.!?) . P.wposInDir p) P.dirs
-        = sng T.MustBreak
+        , wp:_ <- filter ((== Just (Exit True)) . (B.exits bd M.!?)) $ P.wposInDir p <$> P.dirs
+        = sng $ T.MustBreak wp
     triggered T.TTutEnd | S.size (unseenBeats game) == 1 = sng T.TutEnd
     triggered _ = S.empty
     trappedDir p dir = or [ not $ B.inBounds p'
