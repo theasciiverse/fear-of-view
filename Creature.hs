@@ -14,9 +14,9 @@ isMonster, isPlayer :: Creature -> Bool
 isMonster (Player _)          = False
 isMonster (InflatedBalloon _) = False
 isMonster (SmartMonster _)    = True
-isMonster (GhostMonster _)    = True
-isMonster (CalmMonster _)     = True
 isMonster (FastMonster _)     = True
+isMonster (CalmMonster _)     = True
+isMonster (GhostMonster _)    = True
 isMonster BasicMonster        = True
 isPlayer (Player _) = True
 isPlayer _          = False

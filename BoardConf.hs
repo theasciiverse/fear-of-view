@@ -54,8 +54,8 @@ genDiffs bc = (M.fromList <$>) . forM P.dirs $ \d -> (d,) <$> genDiffDir d where
     genDiffDir d    = sequence [ doCreature $ dirCTp d, doWall ]
     dirCTp P.DUp    = SmartMonster
     dirCTp P.DDown  = CalmMonster
-    dirCTp P.DRight = GhostMonster
-    dirCTp P.DLeft  = FastMonster
+    dirCTp P.DLeft  = GhostMonster
+    dirCTp P.DRight = FastMonster
     doCreature :: (Bool -> Creature) -> Rand StdGen (RollFromDiff Diffable)
     doCreature cTp = randElemUnsafe $
         [ Add . DiffableCreature $ cTp False ] <>
