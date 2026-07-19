@@ -14,6 +14,7 @@ import qualified BearLibTerminal     as B
 
 import           BearUI
 import           Geometry
+import           Window
 
 import qualified Game                as G
 import qualified TermDraw            as TD
@@ -31,16 +32,21 @@ instance UIM.UIMonad UIM where
         pure $ b1 && b2
     endUI = liftIO B.terminalClose
     draw game = do
+        drawTrans
         erase
         drawState
         liftIO B.terminalRefresh
         where
         st = G.playState game
-        drawState = case st of
-            G.RoundEnded -> TD.drawMainScreen game
-            _ -> do
-                let bd = G.board game
+        drawTrans
+            | st == G.RoundEnded = pure ()
+            | otherwise = do
+                wErase BoardWin
                 forM_ (reverse $ G.transitions game) TD.drawTrans
+        drawState
+            | st == G.RoundEnded = TD.drawMainScreen game
+            | otherwise = do
+                let bd = G.board game
                 TD.drawBoard bd
                 TD.drawInv (G.selectedSlot game) (G.preserveSlots game) (G.canGrab game) (G.inventory game) (G.powerOn game)
                 TD.drawEquip $ G.equipment game
