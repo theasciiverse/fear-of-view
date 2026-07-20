@@ -161,10 +161,11 @@ drawTrans (B.Transition bd0 alerts) =
         , highlightWPs = wps `S.union` highlightWPs alerted
         }
 
-char,bold,dim :: Char -> Glyph
+char,bold,dim,boldDim :: Char -> Glyph
 char c = Glyph c style0
 bold c = Glyph c styleBold
 dim c = Glyph c $ CStyle (onBlue white) False
+boldDim c = Glyph c $ CStyle (onBlue white) True
 
 levelStyle :: Int -> CStyle
 levelStyle 1 = CStyle green False
@@ -317,11 +318,14 @@ drawAlertedBoard AlertedBoard{ base = bd, creatureMoves = cmvs, itemMoves = imvs
         creatures = (,Nothing) . Just . creatureGlyph' <$> B.creatures bd
         creatureGlyph' (Player life) = Glyph '@' $ (lifeStyle life) { cstyleBold = not $ B.ghostly bd }
         creatureGlyph' c = creatureGlyph c
-        obscured = M.fromSet (\p -> (Just . dim $ expectChar p,) . Just . powerBG p . dim $ obsChar p) $ B.poss S.\\ F.pFov (B.visible bd) where
+        obscured = M.fromSet (\p -> (Just . dim $ expectChar p,) . Just . powerBG p . obsStyle $ obsChar p) $ B.poss S.\\ F.pFov (B.visible bd) where
             expectChar p
                 | B.preexpectant bd
                 , Just (Just c) <- B.expected bd M.!? p = glyphChar $ creatureGlyph' c
                 | otherwise = ' '
+            obsStyle
+                | S.size (B.unrevealed bd) == 1 = boldDim
+                | otherwise = dim
             obsChar p
                 | p `S.member` B.unrevealed bd = expectedTreasureChar p
                 | otherwise = ' '
