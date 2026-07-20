@@ -60,7 +60,7 @@ genDiffs bc = (M.fromList <$>) . forM P.dirs $ \d -> (d,) <$> genDiffDir d where
     doCreature cTp = randElemUnsafe $
         [ Add . DiffableCreature $ cTp False ] <>
         [ Swap (DiffableCreature $ cTp False) (DiffableCreature $ cTp True)
-        | cTp False `elem` RF.vals (creatureRoll bc)
+        | (2 <=) . length . filter (== cTp False) $ RF.vals (creatureRoll bc)
         ]
     doWall = join $ randElemUnsafe [ addWall, swapWall ]
     addWall = pure . Add . DiffableWall $ if level bc == 1 then Hedge else BasicWall
