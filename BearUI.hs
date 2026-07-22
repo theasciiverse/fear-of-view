@@ -11,6 +11,7 @@ import           Data.Char                (chr, ord)
 import qualified BearLibTerminal          as B
 import           BearLibTerminal.Keycodes ()
 import qualified Data.Map.Strict          as M
+import qualified Data.Set                 as S
 
 import           CStyle
 import           Geometry
@@ -137,6 +138,12 @@ drawGlyph w (CP.CPos x y) (Glyph ch style) = do
     let WinDim dx dy _ _ = getWin w
     withStyle w style . liftIO $ B.terminalPut (x+dx) (y+dy) (sub ch)
 
+drawCompositeGlyph :: Window -> CP.CPos -> CompositeGlyph -> UIM ()
+drawCompositeGlyph w p gs = do
+    B.terminalComposition B.CompositionOn
+    mapM_ (drawGlyph w p) $ S.toList gs
+    B.terminalComposition B.CompositionOff
+
 erase :: UIM ()
 erase = B.terminalClear
 
@@ -150,6 +157,7 @@ wRefresh _ = liftIO B.terminalRefresh -- no per-win version
 instance TM.TermM UIM where
     drawStr = drawStr
     drawGlyph = drawGlyph
+    drawCompositeGlyph = drawCompositeGlyph
     wErase = wErase
     wRefresh = wRefresh
     drawHighlightBoxChars = drawHighlightBoxChars

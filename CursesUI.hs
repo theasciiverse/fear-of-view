@@ -7,9 +7,12 @@ module CursesUI where
 import           Control.Exception.Safe
 import           Control.Monad.State
 import           Data.Char              (chr)
+import           Data.Function          (on)
+import           Data.List              (minimumBy)
 import           Foreign.Ptr
 
 import qualified Data.Map.Strict        as M
+import qualified Data.Set               as S
 import qualified UI.HSCurses.Curses     as C
 
 import           CStyle
@@ -155,6 +158,33 @@ drawStr w style (CP.CPos x y) s = do
 drawGlyph :: Window -> CP.CPos -> Glyph -> UIM ()
 drawGlyph w p (Glyph ch style) = drawStr w style p $ ch:""
 
+drawCompositeGlyph :: Window -> CP.CPos -> CompositeGlyph -> UIM ()
+drawCompositeGlyph w p = drawGlyph w p . combine
+    where
+    combine gs = Glyph (combineC $ S.map glyphChar gs) (combineS $ S.map glyphStyle gs)
+        where
+        combineC cs
+            | cs == S.fromList ['╴','╶'] = '─'
+            | cs == S.fromList ['╵','╷'] = '│'
+            | cs == S.fromList ['╵','╶'] = '└'
+            | cs == S.fromList ['╵','╴'] = '┘'
+            | cs == S.fromList ['╷','╶'] = '┌'
+            | cs == S.fromList ['╷','╴'] = '┐'
+            | cs == S.fromList ['╴','╵','╶','╷'] = '┼'
+            | cs == S.fromList ['╵','╶','╷'] = '├'
+            | cs == S.fromList ['╴','╶','╷'] = '┬'
+            | cs == S.fromList ['╴','╵','╷'] = '┤'
+            | cs == S.fromList ['╴','╵','╶'] = '┴'
+            -- |These half-lines are nice in theory, and in bearlib, but badly
+            -- supported in common terminal emulators, so use cdot instead.
+            | S.size cs == 1 && S.findMin cs `elem` ['╴','╵','╶','╷'] = '·'
+            | otherwise = S.findMin cs
+        combineS = minimumBy (compare `on` (prefYellow . cstyleCol)) . S.toList
+            where
+            -- yellow < white < green < magenta
+            prefYellow 3 = -1
+            prefYellow n = n
+
 wErase, wRefresh, wnoutRefresh :: Window -> UIM ()
 wErase w = liftIO . C.werase =<< getWin w
 wRefresh w = liftIO . C.wRefresh =<< getWin w
@@ -163,6 +193,7 @@ wnoutRefresh w = liftIO . C.wnoutRefresh =<< getWin w
 instance TM.TermM UIM where
     drawStr = drawStr
     drawGlyph = drawGlyph
+    drawCompositeGlyph = drawCompositeGlyph
     wErase = wErase
     wRefresh = wRefresh
     drawHighlightBoxChars = drawHighlightBoxChars

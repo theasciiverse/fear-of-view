@@ -9,8 +9,7 @@ import           Control.Concurrent  (threadDelay)
 import           Control.Monad       (forM, forM_, mplus, unless, void)
 import           Control.Monad.State (get, lift, liftIO, put, runStateT)
 import           Data.Bifunctor      (bimap)
-import           Data.Function       (on)
-import           Data.List           (intersperse, minimumBy)
+import           Data.List           (intersperse)
 import           Data.Maybe          (fromMaybe, isJust, isNothing, maybeToList)
 import           Safe                (atMay)
 
@@ -265,7 +264,7 @@ exitGlyphVert st wp = \case
     Exit locked    -> bold $ exitChar locked (P.exitDir wp)
     KeyExit locked -> Glyph (exitChar locked (P.exitDir wp)) $ equipStyle Key
     Entrance       -> exitGlyphVert st wp SeenBoundary
-    UnseenBoundary -> char '.'
+    UnseenBoundary -> char '·'
     SeenBoundary   -> Glyph '│' st
 
 exitGlyphHoriz :: CStyle -> P.WPos -> Exit -> (Glyph,Glyph)
@@ -273,7 +272,7 @@ exitGlyphHoriz st wp = \case
     Exit locked    -> (bold $ exitChar locked (P.exitDir wp), Glyph '─' st)
     KeyExit locked -> (Glyph (exitChar locked (P.exitDir wp)) $ equipStyle Key, Glyph '─' st)
     Entrance       -> exitGlyphHoriz st wp SeenBoundary
-    UnseenBoundary -> doublet $ char '.'
+    UnseenBoundary -> doublet $ char '·'
     SeenBoundary   -> doublet $ Glyph '─' st
     where doublet gl = (gl,gl)
 
@@ -342,13 +341,22 @@ drawAlertedBoard AlertedBoard{ base = bd, creatureMoves = cmvs, itemMoves = imvs
         highlightH = M.fromSet (const . biGlyph $ bold '#') $ filterSH hwps
 
         -- Positions with wall-intersection to top-right
-        intersections :: M.Map P.Pos Glyph
+        intersections :: M.Map P.Pos CompositeGlyph
         intersections = iHighlighted `M.union` iObscured `M.union` iWalls
-        iWalls = M.map (Glyph '·') . M.unionsWith pref $ M.fromList <$>
-            [ [ (p,i), (p <> if up then P.Pos (-1) 0 else P.Pos 0 (-1),i) ]
-            | (P.WPos p up, Just i) <- M.toList $
-                M.map wallI (B.walls bd) `M.union` M.map (const $ Just exitCol) (B.exits bd) ]
+        iWalls = M.unionsWith S.union $ M.map mk . M.fromList <$>
+            [ [ (p, (d,s)), (p <> if up then P.Pos (-1) 0 else P.Pos 0 (-1),(P.negDir d,s)) ]
+            | (P.WPos p up, Just s) <- M.toList $
+                M.map wallI (B.walls bd) `M.union` M.map (const $ Just exitCol) (B.exits bd)
+            , let d = if up then P.DRight else P.DUp
+            ]
             where
+            mk :: (P.Dir, CStyle) -> CompositeGlyph
+            mk (d,s) = S.singleton $ Glyph (mk' d) s
+                where
+                mk' P.DUp    = '╷'
+                mk' P.DRight = '╴'
+                mk' P.DDown  = '╵'
+                mk' P.DLeft  = '╶'
             wallI BasicWall        = Just $ CStyle white True
             wallI Hedge            = Just $ CStyle green True
             wallI ThickHedge       = Just $ CStyle green False
@@ -359,12 +367,11 @@ drawAlertedBoard AlertedBoard{ base = bd, creatureMoves = cmvs, itemMoves = imvs
             wallI (CloakWall _ _)  = Just $ CStyle cyan True
             wallI TentWall         = Just $ CStyle red True
             exitCol = levBoundSt
-            pref a b = minimumBy (compare `on` cstyleCol) [a,b] -- white < green < magenta
-        iObscured = M.fromSet (const $ dim ' ') . (`S.filter` B.poss) $ \p ->
+        iObscured = M.fromSet (const . S.singleton $ dim ' ') . (`S.filter` B.poss) $ \p ->
             P.x p < B.w-1 && P.y p < B.h-1 &&
             2 < (length . filter (\wp -> wp `S.member` obscuredWPoss || not (B.inBoundsW wp))
                 $ intAdjWps p)
-        iHighlighted = M.fromSet (const $ bold '#') . (`S.filter` B.poss) $ \p -> P.x p < B.w-1 && P.y p < B.h-1 &&
+        iHighlighted = M.fromSet (const . S.singleton $ bold '#') . (`S.filter` B.poss) $ \p -> P.x p < B.w-1 && P.y p < B.h-1 &&
             2 < (length . filter (`S.member` hwps) $ intAdjWps p)
         intAdjWps p = [P.WPos p True, P.WPos p False, P.WPos (p +^ P.dirPos P.DRight) True, P.WPos (p +^ P.dirPos P.DUp) False]
 
@@ -378,10 +385,12 @@ drawAlertedBoard AlertedBoard{ base = bd, creatureMoves = cmvs, itemMoves = imvs
             [ horizCPosMap cells
             , M.mapKeys wposCPos wallsV
             , horizWCPosMap wallsH
-            , M.mapKeys posIntCPos intersections
             ]
+        compGlyphs :: M.Map CP.CPos CompositeGlyph
+        compGlyphs = M.mapKeys posIntCPos intersections
     in do
         sequence_ $ M.mapWithKey (TM.drawGlyph BoardWin) glyphs
+        sequence_ $ M.mapWithKey (TM.drawCompositeGlyph BoardWin) compGlyphs
 
 drawInv :: TM.TermM m => Maybe I.Slot -> Int -> Bool -> I.Inventory -> Maybe Pow.Power -> m ()
 drawInv sel preserve highlightEmpty (I.Inventory inv) pow = do
