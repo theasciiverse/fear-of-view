@@ -55,6 +55,9 @@ charify key = case key of
     _                            -> Nothing
 
 wSetStyle :: Window -> CStyle -> UIM ()
+wSetStyle _ (CStyle 7 False) =
+    -- special case: replace black on black with dim grey on black
+    liftIO $ B.terminalColorUInt 0xff282828 >> B.terminalBkColorUInt 0xff0000
 wSetStyle _ (CStyle col b) = do
     let (bg,fg) = col `divMod` 8
     liftIO . B.terminalColorUInt $ colour fg b

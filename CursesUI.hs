@@ -132,6 +132,7 @@ drawHighlightBoxChars (CP.CPos x y) gls = do
         where add yy xx = C.mvWAddStr cw yy xx . (subCharAscii ascii <$>)
 
 drawStr :: Window -> CStyle -> CP.CPos -> String -> UIM ()
+drawStr _ (CStyle 7 False) _ _ = pure () -- no point drawing black on black
 drawStr w style (CP.CPos x y) s = do
     ascii <- gets asciiOnly
     cw <- getWin w

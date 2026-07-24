@@ -289,8 +289,8 @@ drawAlertedBoard :: TM.TermM m => AlertedBoard -> m ()
 drawAlertedBoard AlertedBoard{ base = bd, creatureMoves = cmvs, itemMoves = imvs, itemUses = iuses, highlightPs = hps, highlightWPs = hwps } =
     let wallsV :: M.Map P.WPos Glyph
         wallsH :: M.Map P.WPos (Maybe Glyph,Maybe Glyph)
-        wallsV = highlightV `M.union` mvingV `M.union` wObscuredV `M.union` bdWallsV `M.union` borderV
-        wallsH = highlightH `M.union` mvingH `M.union` wObscuredH `M.union` bdWallsH `M.union` borderH
+        wallsV = highlightV `M.union` mvingV `M.union` wObscuredV `M.union` bdWallsV `M.union` borderV `M.union` bgWallsV
+        wallsH = highlightH `M.union` mvingH `M.union` wObscuredH `M.union` bdWallsH `M.union` borderH `M.union` bgWallsH
         cells, items, creatures, obscured, powers :: M.Map P.Pos (Maybe Glyph,Maybe Glyph)
         layer = M.unionWith $ \(l,r) (l',r') -> (l `mplus` l', r `mplus` r')
         cells = highlightCells `layer` obscured `layer` creatures `layer` items `layer` powers
@@ -304,6 +304,9 @@ drawAlertedBoard AlertedBoard{ base = bd, creatureMoves = cmvs, itemMoves = imvs
         borderH = glyphsH (exitGlyphHoriz levBoundSt) $ B.exits bd
         bdWallsV = glyphsV (const wallGlyphVert) $ B.walls bd
         bdWallsH = glyphsH (const wallGlyphHoriz) $ B.walls bd
+        -- |black on black background grid, ignored by CursesUI
+        bgWallsV = M.fromSet (const . Glyph '│' $ CStyle black False) . filterSV $ B.wPossIncBdd
+        bgWallsH = M.fromSet (const . biGlyph . Glyph '─' $ CStyle black False) . filterSH $ B.wPossIncBdd
         levBoundSt = levelStyle . BC.level $ B.conf bd
         items = M.mapWithKey itemGlyphs $ B.items bd
         itemGlyphs p i = (Nothing,) . Just . powerBG p $ itemGlyph i
