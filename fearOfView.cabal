@@ -41,6 +41,7 @@ executable fearOfView
         Board
         BoardConf
         Command
+        CommonUI
         Creature
         CPos
         CStyle

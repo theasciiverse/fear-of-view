@@ -1,6 +1,5 @@
 {-# LANGUAGE CPP               #-}
 {-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE LambdaCase        #-}
 
 module BearUI where
 
@@ -13,6 +12,7 @@ import           BearLibTerminal.Keycodes ()
 import qualified Data.Map.Strict          as M
 import qualified Data.Set                 as S
 
+import           CommonUI
 import           CStyle
 import           Geometry
 import           Window
@@ -86,20 +86,6 @@ wSetStyle _ (CStyle col b) = do
 withStyle :: Window -> CStyle -> (UIM a -> UIM a)
 withStyle w style m = wSetStyle w style >> (m <* wSetStyle w style0)
 
-subCharAscii :: Bool -> Char -> Char
-subCharAscii True = \case
-    '·' -> '+'
-    '┌' -> '+'
-    '┐' -> '+'
-    '└' -> '+'
-    '┘' -> '+'
-    '│' -> '|'
-    '║' -> '}'
-    '─' -> '-'
-    '═' -> '='
-    c   -> c
-subCharAscii False = id
-
 drawHighlightBoxChars :: CP.CPos -> [Glyph] -> UIM ()
 drawHighlightBoxChars p gls = do
     let w = 2 + length gls
@@ -108,15 +94,10 @@ drawHighlightBoxChars p gls = do
     withStyle TutorialWin (CStyle magenta True) . liftIO $ drawBorder sub (3,w)
     liftIO $ B.terminalLayer 0
     where
-    -- Draw border manually rather than using C.wBorder:
-    -- default border characters are ugly on e.g. windows PuTTY,
-    -- and trying to set C.Border to use box-drawing chars doesn't work.
     drawBorder :: (Char -> Char) -> (Int,Int) -> IO ()
-    drawBorder sub (h,w) = do
-        let add y x s = drawStrByChar (p' <> CP.CPos x y) $ sub <$> s
-        add 0 0 $ '╔':replicate (w-2) '═' <> "╗"
-        sequence_ [ add y' 0 "║" >> add y' (w-1) "║" | y' <- [1..h-2] ]
-        add (h-1) 0 $ '╚':replicate (w-2) '═' <> "╝"
+    drawBorder sub (h,w) =
+        drawBorderWith add w h
+        where add y x s = drawStrByChar (p' <> CP.CPos x y) $ sub <$> s
     p' = p <> CP.CPos (-1) (-1)
 
 

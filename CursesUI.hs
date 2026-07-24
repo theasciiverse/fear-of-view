@@ -1,6 +1,5 @@
 {-# LANGUAGE CPP               #-}
 {-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE LambdaCase        #-}
 
 module CursesUI where
 
@@ -15,6 +14,7 @@ import qualified Data.Map.Strict        as M
 import qualified Data.Set               as S
 import qualified UI.HSCurses.Curses     as C
 
+import           CommonUI
 import           CStyle
 import           Window
 
@@ -110,16 +110,6 @@ wSetStyle w (CStyle col b) = do
 withStyle :: Window -> CStyle -> (UIM a -> UIM a)
 withStyle w style m = wSetStyle w style >> (m <* wSetStyle w style0)
 
-subCharAscii :: Bool -> Char -> Char
-subCharAscii True = \case
-    c | c `elem` "·┌┐└┘┼├┬┤┴" -> '+'
-    '│'                       -> '|'
-    '║'                       -> '}'
-    '─'                       -> '-'
-    '═'                       -> '='
-    c                         -> c
-subCharAscii False = id
-
 drawHighlightBoxChars :: CP.CPos -> [Glyph] -> UIM ()
 drawHighlightBoxChars (CP.CPos x y) gls = do
     -- hscurses doesn't expose mvwin, so manually recreate the window in the
@@ -136,14 +126,10 @@ drawHighlightBoxChars (CP.CPos x y) gls = do
     -- default border characters are ugly on e.g. windows PuTTY,
     -- and trying to set C.Border to use box-drawing chars doesn't work.
     drawBorder :: Bool -> (Int,Int) -> C.Window -> IO ()
-    drawBorder ascii (h,w) cw = do
-        let add yy xx = C.mvWAddStr cw yy xx . (subCharAscii ascii <$>)
-        add 0 0 $ '┌':replicate (w-2) '─' <> "┐"
-        sequence_ [ add y' 0 "│" >> add y' (w-1) "│"
-            | y' <- [1..h-2] ]
+    drawBorder ascii (h,w) cw =
         -- |This throws an error due to moving cursor out of the window
-        add (h-1) 0 ('└':replicate (w-2) '─' <> "┘")
-            `catchIO` (\_ -> pure ())
+        drawBorderWith add w h `catchIO` (\_ -> pure ())
+        where add yy xx = C.mvWAddStr cw yy xx . (subCharAscii ascii <$>)
 
 drawStr :: Window -> CStyle -> CP.CPos -> String -> UIM ()
 drawStr w style (CP.CPos x y) s = do
@@ -194,4 +180,3 @@ instance TM.TermM UIM where
     wRefresh = wRefresh
     drawHighlightBoxChars = drawHighlightBoxChars
     asciiOnly = gets asciiOnly
-
