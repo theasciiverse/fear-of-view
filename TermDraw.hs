@@ -346,7 +346,8 @@ drawAlertedBoard AlertedBoard{ base = bd, creatureMoves = cmvs, itemMoves = imvs
         iWalls = M.unionsWith S.union $ M.map mk . M.fromList <$>
             [ [ (p, (d,s)), (p <> if up then P.Pos (-1) 0 else P.Pos 0 (-1),(P.negDir d,s)) ]
             | (P.WPos p up, Just s) <- M.toList $
-                M.map wallI (B.walls bd) `M.union` M.map (const $ Just exitCol) (B.exits bd)
+                M.map wallI (B.walls bd) `M.union`
+                    (M.map (const $ Just exitCol) . M.filter (/= UnseenBoundary) $ B.exits bd)
             , let d = if up then P.DRight else P.DUp
             ]
             where
