@@ -112,16 +112,12 @@ withStyle w style m = wSetStyle w style >> (m <* wSetStyle w style0)
 
 subCharAscii :: Bool -> Char -> Char
 subCharAscii True = \case
-    '·' -> '+'
-    '┌' -> '+'
-    '┐' -> '+'
-    '└' -> '+'
-    '┘' -> '+'
-    '│' -> '|'
-    '║' -> '}'
-    '─' -> '-'
-    '═' -> '='
-    c   -> c
+    c | c `elem` "·┌┐└┘┼├┬┤┴" -> '+'
+    '│'                       -> '|'
+    '║'                       -> '}'
+    '─'                       -> '-'
+    '═'                       -> '='
+    c                         -> c
 subCharAscii False = id
 
 drawHighlightBoxChars :: CP.CPos -> [Glyph] -> UIM ()
