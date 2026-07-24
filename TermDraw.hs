@@ -520,10 +520,10 @@ drawMainScreen game = do
             | otherwise = TM.drawStr win style (CP.CPos ((scrW - length s) `div` 2) y) s
         drawTitle = sequence_ [ drawStyledStrs win (CP.CPos titleX y) s
             | (y,s) <-
-                [ (0, [ ("·──·──·──·", bdSt), ("     ", bgSt) ])
+                [ (0, [ ("┌────────┐", bdSt), ("     ", bgSt) ])
                 , (1, [ ("│", bdSt), (" Fe@r of", styleBold)
                     , ("│", bdSt), ("View ", bgSt) ])
-                , (2, [ ("·──·  ·──·", bdSt), ("     ", bgSt) ])
+                , (2, [ ("└───  ───┘", bdSt), ("     ", bgSt) ])
                 ]
             ] where
             titleX = (scrW - length "| Fe@r of|View") `div` 2
