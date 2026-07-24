@@ -120,10 +120,8 @@ drawGlyph w (CP.CPos x y) (Glyph ch style) = do
     withStyle w style . liftIO $ B.terminalPut (x+dx) (y+dy) (sub ch)
 
 drawCompositeGlyph :: Window -> CP.CPos -> CompositeGlyph -> UIM ()
-drawCompositeGlyph w p gs = do
-    B.terminalComposition B.CompositionOn
+drawCompositeGlyph w p gs =
     mapM_ (drawGlyph w p) $ S.toList gs
-    B.terminalComposition B.CompositionOff
 
 erase :: UIM ()
 erase = B.terminalClear

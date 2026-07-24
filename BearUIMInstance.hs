@@ -29,6 +29,7 @@ instance UIM.UIMonad UIM where
         b2 <- liftIO . B.terminalSetString $ wconf
         -- |Try to set font; uses default font if the font file isn't found.
         _ <- liftIO . B.terminalSetString $ fconf
+        liftIO $ B.terminalComposition B.CompositionOn
         pure $ b1 && b2
     endUI = liftIO B.terminalClose
     draw game = do
