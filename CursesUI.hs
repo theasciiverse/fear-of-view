@@ -181,3 +181,4 @@ instance TM.TermM UIM where
     wRefresh = wRefresh
     drawHighlightBoxChars = drawHighlightBoxChars
     asciiOnly = gets asciiOnly
+    isBear = pure False

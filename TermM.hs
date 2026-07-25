@@ -14,3 +14,4 @@ class MonadIO m => TermM m where
     wErase, wRefresh :: Window -> m ()
     drawHighlightBoxChars :: CP.CPos -> [Glyph] -> m ()
     asciiOnly :: m Bool
+    isBear :: m Bool

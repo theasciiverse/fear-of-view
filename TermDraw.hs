@@ -551,6 +551,7 @@ drawMainScreen game = do
         wonStyle = CStyle magenta True
 
     ascii <- TM.asciiOnly
+    isBear <- TM.isBear
 
     let drawHS :: TM.TermM m => Bool -> Int -> HSInfo -> HS.Highscore -> m ()
         drawHS showName y info hs =
@@ -587,6 +588,13 @@ drawMainScreen game = do
             <> [ "T: Hints" | T.TMeta `S.notMember` G.unseenBeats game ]
             <> [ "-: " <> "ASCII " <> (if ascii then "[x]" else "[ ]")
                , "Q: Exit" ]
+            <> concat [
+                [ "─────────────"
+                , "Alt + Enter:"
+                , "   Fullscreen"
+                , "Alt + -/+:"
+                , "   Zoom"
+                ] | isBear ]
         aKeyL = maximum $ length <$> additionalKeys
 
     let keysLine y = centre style0 y "Keys: cursors / WASD / HJKL; 0-9"
