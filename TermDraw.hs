@@ -177,7 +177,7 @@ showLevel l | l > 0 = (['A'..] !! (l-1)):""
 showLevel _ = "-"
 
 scoreStyle, junkStyle :: CStyle
-scoreStyle = CStyle yellow False
+scoreStyle = CStyle yellow True
 junkStyle = CStyle blue True
 
 lifeStyle :: Int -> CStyle
