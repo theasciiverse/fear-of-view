@@ -9,6 +9,8 @@ module BearUIMInstance where
 import           Control.Monad       (forM_)
 import           Control.Monad.State (evalStateT, liftIO, modify)
 import           Data.Maybe          (maybeToList)
+import           System.IO
+
 
 import qualified BearLibTerminal     as B
 
@@ -30,6 +32,7 @@ instance UIM.UIMonad UIM where
         -- |Try to set font; uses default font if the font file isn't found.
         _ <- liftIO . B.terminalSetString $ fconf
         liftIO $ B.terminalComposition B.CompositionOn
+        liftIO $ hClose stdout >> hClose stderr >> hClose stdin
         pure $ b1 && b2
     endUI = liftIO B.terminalClose
     draw game = do
