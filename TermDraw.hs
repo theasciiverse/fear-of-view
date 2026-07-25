@@ -385,8 +385,9 @@ drawAlertedBoard AlertedBoard{ base = bd, creatureMoves = cmvs, itemMoves = imvs
                         then Just $ modColour onBlue `S.map` cg
                         else Nothing
                     | otherwise = Just cg
-            iObscured = M.fromSet (const . S.singleton $ dim ' ') . (`S.filter` iPoss) $ \p ->
-                2 > (length . filter (`S.member` wpFov) $ intAdjWps p)
+            iObscured = M.fromSet (S.singleton . dim . (\p -> if isBdI p then '·' else ' '))
+                . (`S.filter` iPoss) $ \p ->
+                    2 > (length . filter (`S.member` wpFov) $ intAdjWps p)
             iHighlighted = M.fromSet (const . S.singleton $ bold '#') . (`S.filter` iPoss) $ \p ->
                 (if isCornerI p then 1 else 2) < (length . filter (`S.member` hwps) $ intAdjWps p)
             iPoss = S.fromList [ P.Pos x y | x <- [-1..B.w-1], y <- [-1..B.h-1] ]
