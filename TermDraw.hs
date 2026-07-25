@@ -298,10 +298,17 @@ drawAlertedBoard AlertedBoard{ base = bd, creatureMoves = cmvs, itemMoves = imvs
         filterH = M.filterWithKey $ const . P.up
         filterSV = S.filter $ not . P.up
         filterSH = S.filter P.up
+        mapH :: (Glyph -> a) -> (Glyph,Glyph) -> (a,a)
+        mapH f = bimap f f
         glyphsV f m = M.mapWithKey f $ filterV m
-        glyphsH f m = M.mapWithKey ((bimap Just Just .) . f) $ filterH m
-        borderV = glyphsV (exitGlyphVert levBoundSt) $ B.exits bd
-        borderH = glyphsH (exitGlyphHoriz levBoundSt) $ B.exits bd
+        glyphsH f m = M.mapWithKey ((mapH Just .) . f) $ filterH m
+        borderV = glyphsV (\wp -> markObscure wp . exitGlyphVert levBoundSt wp) $ B.exits bd
+        borderH = glyphsH (\wp -> mapH (markObscure wp) . exitGlyphHoriz levBoundSt wp) $ B.exits bd
+        wpFov = F.wpFov $ B.visible bd
+        pFov = F.pFov $ B.visible bd
+        markObscure wp
+            | wp `S.member` wpFov = id
+            | otherwise = modColour onBlue
         bdWallsV = glyphsV (const wallGlyphVert) $ B.walls bd
         bdWallsH = glyphsH (const wallGlyphHoriz) $ B.walls bd
         -- |black on black background grid, ignored by CursesUI
@@ -320,7 +327,7 @@ drawAlertedBoard AlertedBoard{ base = bd, creatureMoves = cmvs, itemMoves = imvs
         creatures = (,Nothing) . Just . creatureGlyph' <$> B.creatures bd
         creatureGlyph' (Player life) = Glyph '@' $ (lifeStyle life) { cstyleBold = not $ B.ghostly bd }
         creatureGlyph' c = creatureGlyph c
-        obscured = M.fromSet (\p -> (Just . dim $ expectChar p,) . Just . powerBG p . obsStyle $ obsChar p) $ B.poss S.\\ F.pFov (B.visible bd) where
+        obscured = M.fromSet (\p -> (Just . dim $ expectChar p,) . Just . powerBG p . obsStyle $ obsChar p) $ B.poss S.\\ pFov where
             expectChar p
                 | B.preexpectant bd
                 , Just (Just c) <- B.expected bd M.!? p = glyphChar $ creatureGlyph' c
@@ -345,39 +352,47 @@ drawAlertedBoard AlertedBoard{ base = bd, creatureMoves = cmvs, itemMoves = imvs
 
         -- Positions with wall-intersection to top-right
         intersections :: M.Map P.Pos CompositeGlyph
-        intersections = iHighlighted `M.union` iObscured `M.union` iWalls
-        iWalls = M.unionsWith S.union $ M.map mk . M.fromList <$>
-            [ [ (p, (d,s)), (p <> if up then P.Pos (-1) 0 else P.Pos 0 (-1),(P.negDir d,s)) ]
-            | (P.WPos p up, Just s) <- M.toList $
-                M.map wallI (B.walls bd) `M.union`
-                    (M.map (const $ Just exitCol) . M.filter (/= UnseenBoundary) $ B.exits bd)
-            , let d = if up then P.DRight else P.DUp
-            ]
+        intersections = iHighlighted `M.union` iWalls `M.union` iObscured
             where
-            mk :: (P.Dir, CStyle) -> CompositeGlyph
-            mk (d,s) = S.singleton $ Glyph (mk' d) s
+            iWalls = M.mapMaybeWithKey obscureI . M.unionsWith S.union $ M.map mk . M.fromList <$>
+                [ [ (p, (d,s)), (p <> if up then P.Pos (-1) 0 else P.Pos 0 (-1),(P.negDir d,s)) ]
+                | (P.WPos p up, Just s) <- M.toList $
+                    M.map wallI (B.walls bd) `M.union` M.map exitCol (B.exits bd)
+                , let d = if up then P.DRight else P.DUp
+                ]
                 where
-                mk' P.DUp    = '╷'
-                mk' P.DRight = '╴'
-                mk' P.DDown  = '╵'
-                mk' P.DLeft  = '╶'
-            wallI BasicWall        = Just $ CStyle white True
-            wallI Hedge            = Just $ CStyle green True
-            wallI ThickHedge       = Just $ CStyle green False
-            wallI Pillar           = Nothing
-            wallI Window           = Nothing
-            wallI BrokenWindow     = Nothing
-            wallI (UmbrellaWall _) = Nothing
-            wallI (CloakWall _ _)  = Just $ CStyle cyan True
-            wallI TentWall         = Just $ CStyle red True
-            exitCol = levBoundSt
-        iObscured = M.fromSet (const . S.singleton $ dim ' ') . (`S.filter` B.poss) $ \p ->
-            P.x p < B.w-1 && P.y p < B.h-1 &&
-            2 < (length . filter (\wp -> wp `S.member` obscuredWPoss || not (B.inBoundsW wp))
-                $ intAdjWps p)
-        iHighlighted = M.fromSet (const . S.singleton $ bold '#') . (`S.filter` B.poss) $ \p -> P.x p < B.w-1 && P.y p < B.h-1 &&
-            2 < (length . filter (`S.member` hwps) $ intAdjWps p)
-        intAdjWps p = [P.WPos p True, P.WPos p False, P.WPos (p +^ P.dirPos P.DRight) True, P.WPos (p +^ P.dirPos P.DUp) False]
+                mk :: (P.Dir, CStyle) -> CompositeGlyph
+                mk (d,s) = S.singleton $ Glyph (mk' d) s
+                    where
+                    mk' P.DUp    = '╷'
+                    mk' P.DRight = '╴'
+                    mk' P.DDown  = '╵'
+                    mk' P.DLeft  = '╶'
+                wallI BasicWall        = Just $ CStyle white True
+                wallI Hedge            = Just $ CStyle green True
+                wallI ThickHedge       = Just $ CStyle green False
+                wallI Pillar           = Nothing
+                wallI Window           = Nothing
+                wallI BrokenWindow     = Nothing
+                wallI (UmbrellaWall _) = Nothing
+                wallI (CloakWall _ _)  = Just $ CStyle cyan True
+                wallI TentWall         = Just $ CStyle red True
+                exitCol UnseenBoundary = Nothing
+                exitCol _              = Just levBoundSt
+                obscureI :: P.Pos -> CompositeGlyph -> Maybe CompositeGlyph
+                obscureI p cg
+                    | p `S.member` M.keysSet iObscured = if isBdI p
+                        then Just $ modColour onBlue `S.map` cg
+                        else Nothing
+                    | otherwise = Just cg
+            iObscured = M.fromSet (const . S.singleton $ dim ' ') . (`S.filter` iPoss) $ \p ->
+                2 > (length . filter (`S.member` wpFov) $ intAdjWps p)
+            iHighlighted = M.fromSet (const . S.singleton $ bold '#') . (`S.filter` iPoss) $ \p ->
+                (if isCornerI p then 1 else 2) < (length . filter (`S.member` hwps) $ intAdjWps p)
+            iPoss = S.fromList [ P.Pos x y | x <- [-1..B.w-1], y <- [-1..B.h-1] ]
+            isBdI (P.Pos x y) = x == -1 || x == B.w-1 || y == -1 || y == B.h-1
+            isCornerI (P.Pos x y) = (x,y) `elem` [(-1,-1),(-1,B.h-1),(B.w-1,B.h-1),(B.w-1,-1)]
+            intAdjWps p = [P.WPos p True, P.WPos p False, P.WPos (p +^ P.dirPos P.DRight) True, P.WPos (p +^ P.dirPos P.DUp) False]
 
         horizCPosMap :: M.Map P.Pos (Maybe Glyph, Maybe Glyph) -> M.Map CP.CPos Glyph
         horizCPosMap m = M.mapMaybe fst (M.mapKeys posCPosL m) `M.union` M.mapMaybe snd (M.mapKeys posCPosR m)

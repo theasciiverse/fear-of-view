@@ -27,7 +27,10 @@ styleBold = CStyle 0 True
 data Glyph = Glyph { glyphChar :: Char, glyphStyle :: CStyle }
     deriving (Eq, Ord)
 
+modStyleColour :: (ColPair -> ColPair) -> CStyle -> CStyle
+modStyleColour f (CStyle col b) = CStyle (f col) b
+
 modColour :: (ColPair -> ColPair) -> Glyph -> Glyph
-modColour f (Glyph c (CStyle col b)) = Glyph c (CStyle (f col) b)
+modColour f (Glyph c st) = Glyph c $ modStyleColour f st
 
 type CompositeGlyph = S.Set Glyph
