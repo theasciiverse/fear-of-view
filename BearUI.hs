@@ -82,7 +82,7 @@ wSetStyle _ (CStyle col b) = do
         1 -> 0xffff0000 -- bold red
         2 -> 0xff00ff00 -- bold green
         3 -> 0xffffff00 -- bold yellow
-        4 -> 0xff0000ff -- bold blue
+        4 -> 0xff3030ff -- bold blue
         5 -> 0xffff00bf -- bold magenta
         6 -> 0xff00ffff -- bold cyan
         _ -> 0xff303030 -- dark grey
