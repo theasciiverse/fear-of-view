@@ -3,7 +3,7 @@
 
 module Board where
 
-import           Control.Monad         (foldM, guard, when)
+import           Control.Monad         (filterM, foldM, guard, when, (<=<))
 import           Control.Monad.Random  (Rand, StdGen)
 import           Control.Monad.Writer  (Writer, WriterT, lift, mapWriterT,
                                         runWriter, tell)
@@ -600,7 +600,8 @@ npcsAct bd0
     where
     getActors :: Board -> WriterT [Alert] (Rand StdGen) [(P.Pos, Creature)]
     getActors = lift . shuffle . M.toList . npcs
-    getActorsWith f = (filter (f . snd) <$>) . getActors
+    getActorsWith :: (Creature -> Rand StdGen Bool) -> Board -> WriterT [Alert] (Rand StdGen) [(P.Pos, Creature)]
+    getActorsWith f = filterM (lift . f . snd) <=< getActors
     actAlerted f bd = do
         actors <- getActorsWith f bd
         foldM npcAct bd actors <* mapM_ (tell . (\(p,c) -> [AlertMoveCreatureVia c p])) actors
@@ -635,11 +636,12 @@ npcsAct bd0
     pathAlg (SmartMonster _) = findPathDir
     pathAlg _                = \_ _ _ _ -> pure Nothing
 
-    isFast (FastMonster _) = True
-    isFast _               = False
-
-    isVeryFast (FastMonster True) = True
-    isVeryFast _                  = False
+    isFast, isVeryFast :: Creature -> Rand StdGen Bool
+    isFast (FastMonster False) = pure True
+    isFast (FastMonster True)  = randElemUnsafe [True, True, False]
+    isFast _                   = pure False
+    isVeryFast (FastMonster True) = randElemUnsafe [True, False]
+    isVeryFast _                  = pure False
 
 tryUseInvItem :: InvItem -> P.Dir -> Board -> WriterT [Alert] Maybe Board
 tryUseInvItem e d bd
