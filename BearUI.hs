@@ -47,6 +47,7 @@ charify key = case key of
     B.TkSpace                    -> Just ' '
     B.TkReturn                   -> Just '\r'
     B.TkEnter                    -> Just '\n'
+    B.TkClose                    -> Just 'q'
     c | B.TkA <= c && c <= B.TkZ -> Just $ chr (ord 'A' + (fromEnum c - fromEnum B.TkA))
     B.Tk0 -> Just '0'
     c | B.Tk1 <= c && c <= B.Tk9 -> Just $ chr (ord '1' + (fromEnum c - fromEnum B.Tk1))
