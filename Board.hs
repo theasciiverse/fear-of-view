@@ -320,7 +320,7 @@ fov bd = addOrbFovs plFov plFov where
         in addOrbFovs (v `F.union` orbFovs) (orbFovs F.\\ v)
     -- We can see upgraded ghosts through walls
     ghostPoss | ppos:_ <- playerPoss bd
-        = S.filter ((<= 1) . P.distSquared ppos) . M.keysSet . M.filter (== GhostMonster True) $ creatures bd
+        = S.filter ((<= 2) . P.distSquared ppos) . M.keysSet . M.filter (== GhostMonster True) $ creatures bd
         | otherwise = S.empty
     ghostFovs = F.Fov ghostPoss S.empty
 playerFov bd = F.unions . map (fovAt bd) $ playerPoss bd
