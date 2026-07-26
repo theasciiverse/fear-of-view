@@ -1,7 +1,8 @@
 module Highscore where
 
 import           Data.Function (on)
-import           Data.List     (sort)
+
+import qualified Data.List     (sort)
 
 import qualified Data.Set      as S
 
@@ -24,11 +25,11 @@ instance Ord Highscore where
 
 type Highscores = [Highscore]
 
-maxHighscores :: Int
-maxHighscores = 10
+sort :: [Highscore] -> [Highscore]
+sort = Data.List.sort
 
 add :: Highscore -> Highscores -> Highscores
-add hs = take maxHighscores . sort . (hs:)
+add hs = (hs:)
 
 empty :: Highscores
 empty = []

@@ -517,7 +517,7 @@ drawLevelInfo bd = do
         keyExitDirs = exitsWith (KeyExit True)
         possibleExitDirs = exitDirs <> keyExitDirs <> exitsWith UnseenBoundary
     drawFound = sequence_
-        [ TM.drawGlyph win (CP.CPos (G.initWallSides + 3 + n) 1) gl
+        [ TM.drawGlyph win (CP.CPos (G.initWallSides + 4 + n) 1) gl
         | n <- [0..B.treasuresPerBoard-1]
         , let gl = maybe ((if n == B.treasuresPerBoard - 1 then bold else char) '?')
                 itemGlyph $ B.found bd `atMay` n
@@ -613,9 +613,22 @@ drawMainScreen game = do
                     drawHS False 4 info prev
                     centre styleBold 6 "Press Space to start new game"
                 Nothing -> centre styleBold 4 "Press Space to start"
-    keysLine 7
 
     hss <- liftIO HSF.get
+    let ourHSs = filter ((== HS.name curHs) . HS.name) hss
+    let avOver = 10
+    if length ourHSs < avOver
+        then keysLine 7
+        else
+            let (avd,avm) = (`divMod` avOver) . sum $ HS.score <$> take avOver ourHSs
+                s = show avOver <> " game average: "
+                s' = show avd <> "." <> show avm <> "~"
+                x = (scrW - length s - length s') `div` 2
+            in drawStyledStrs win (CP.CPos x 7)
+                [ (s, style0)
+                , (s', scoreStyle)
+                ]
+
     unless (null hss) $ do
         let someNamed = any (isJust . HS.name) hss
         drawStyledStrs win (CP.CPos (scoreX someNamed - 1) 9) $
@@ -625,7 +638,7 @@ drawMainScreen game = do
             , ("Level ", style0)
             , ("Gems ", CStyle magenta False)
             , ("Equip", style0) ]
-        sequence_ [ drawHS someNamed (10+i) (HSRank $ 1+i) hs | (i,hs) <- zip [0..] hss ]
+        sequence_ [ drawHS someNamed (10+i) (HSRank $ 1+i) hs | (i,hs) <- zip [0..] $ HS.sort hss ]
 
     sequence_ [ TM.drawStr win
             (CStyle (onBlue white) $ n == 0)
