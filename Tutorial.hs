@@ -98,7 +98,7 @@ text = text' . tp
     text' TSeePotion =
         "A drink? That would make you feel better."
     text' TSeeScore =
-        "This is just what you're looking for."
+        "These are just what you're looking for."
     text' TSeeJunk =
         "A load of junk. Maybe you could salvage something."
     text' TSeeGem =
