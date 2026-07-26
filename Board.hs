@@ -435,12 +435,6 @@ creatureCanMove bd c p dir =
         wp = P.wposInDir p dir
     in inBounds p' && (isPlayer c || M.notMember p' (creatures bd)) && throughWall bd c (walls bd M.!? wp)
 
-creatureCanMoveIgnoringCreatures :: Board -> Creature -> P.Pos -> P.Dir -> Bool
-creatureCanMoveIgnoringCreatures bd c p dir =
-    let p' = P.dirPos dir +^ p
-        wp = P.wposInDir p dir
-    in inBounds p' && throughWall bd c (walls bd M.!? wp)
-
 creatureCanTryMove :: Board -> Creature -> P.Pos -> P.Dir -> Bool
 creatureCanTryMove bd c p dir =
     let p' = P.dirPos dir +^ p
@@ -565,31 +559,6 @@ chaseDir c bd from goal =
         dirs = filter ok <$> P.dirsTowardsZero diff
     in headMay . concat <$> mapM shuffle dirs
 
--- For how many turns (at least) can we avoid being forced out of vision?
-safeTurns :: Board -> P.Pos -> Int
-safeTurns = safeTurns' 0
-    where
-    truncAt = 4 -- truncate recursion
-    safeTurns' n bd p
-        | n >= truncAt = truncAt
-        | p `S.notMember` F.pFov (fov bd) = n
-        | ppos:_ <- playerPoss bd
-        = minimum $ [truncAt] <>
-            [ maximum $ [n] <>
-                [ safeTurns' (n+1) bd' p'
-                | d <- P.dirs
-                , creatureCanMoveIgnoringCreatures bd' BasicMonster p d
-                , let p' = P.dirPos d +^ p
-                ]
-            | pd <- P.dirs
-            , let ppos' = P.dirPos pd +^ ppos
-            , inBounds ppos'
-            , P.wposInDir ppos pd `M.notMember` walls bd
-            , let bd' = modCreatures (M.insert ppos' (Player 1) . M.delete ppos) bd
-            ]
-        | otherwise = n
-
-
 npcs :: Board -> M.Map P.Pos Creature
 npcs = M.filter (not . isPlayer) . creatures
 
@@ -651,9 +620,7 @@ npcsAct bd0
         forceRand Nothing | SmartMonster _ <- c = randAvailableDir
         forceRand md = pure md
         randAvailableDir
-            | SmartMonster False <- c, not . null $ smartDirs = lift $ randElem smartDirs
-            | SmartMonster True <- c = lift $ ((fst <$>) . headMay . sortOn' (negate . snd) <$>) . shuffle $
-                [ (d, safeTurns bd $ p +^ P.dirPos d) | d <- availableDirs ]
+            | SmartMonster _ <- c, not $ null smartDirs = lift $ randElem smartDirs
             | otherwise = lift $ randElem availableDirs
         availableDirs = filter (\d -> creatureCanMove bd BasicMonster p d && creatureCanTryMove bd BasicMonster p d) P.dirs
         smartDirs = filter (\d -> (p +^ P.dirPos d) `S.member` F.pFov (fov bd)) availableDirs
