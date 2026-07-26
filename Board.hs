@@ -301,7 +301,7 @@ seeBoundary hasKey bd = do
     pdist | ppos:_ <- playerPoss bd = P.distSquaredToWPos ppos
         | otherwise = const 0
 
-fov :: Board -> F.Fov
+fov, playerFov :: Board -> F.Fov
 fov bd = addOrbFovs plFov plFov where
     plFov = fovs (playerPoss bd <> cameraPoss bd) `F.union` ghostFovs
     fovs = F.unions . map (fovAt bd)
@@ -310,18 +310,20 @@ fov bd = addOrbFovs plFov plFov where
         | F.null news = v
         | otherwise = let
             orbPoss = [ p | (p, i) <- M.assocs . M.restrictKeys (items bd) $ F.pFov news, isOrb i ]
+                <> [ p | (p, c) <- M.assocs . M.restrictKeys (creatures bd) $ F.pFov news, isOrbMon c ]
             orbFovs = fovs orbPoss
             isOrb (ItemInvItem Orb) = True
             isOrb (RollingOrb _ _)  = True
             isOrb _                 = False
+            isOrbMon (SmartMonster True) = True
+            isOrbMon _                   = False
         in addOrbFovs (v `F.union` orbFovs) (orbFovs F.\\ v)
     -- We can see upgraded ghosts through walls
     ghostPoss | ppos:_ <- playerPoss bd
         = S.filter ((<= 1) . P.distSquared ppos) . M.keysSet . M.filter (== GhostMonster True) $ creatures bd
         | otherwise = S.empty
     ghostFovs = F.Fov ghostPoss S.empty
-
--- playerFov bd = F.unions . map (fovAt bd) $ playerPoss bd
+playerFov bd = F.unions . map (fovAt bd) $ playerPoss bd
 
 
 playerPoss :: Board -> [ P.Pos ]
@@ -445,7 +447,7 @@ creatureCanTryMove bd c p dir =
         [ inBounds p'
         , maybe True isPlayer $ creatures bd M.!? p'
         , throughWall bd c $ walls bd M.!? wp
-        , not (isSmart c) || p' `S.member` F.pFov (fov bd)
+        , not (isSmart c) || p' `S.member` F.pFov (playerFov bd)
         ]
 
 enterAt :: Int -> P.WPos -> Board -> Board
@@ -623,7 +625,7 @@ npcsAct bd0
             | SmartMonster _ <- c, not $ null smartDirs = lift $ randElem smartDirs
             | otherwise = lift $ randElem availableDirs
         availableDirs = filter (\d -> creatureCanMove bd BasicMonster p d && creatureCanTryMove bd BasicMonster p d) P.dirs
-        smartDirs = filter (\d -> (p +^ P.dirPos d) `S.member` F.pFov (fov bd)) availableDirs
+        smartDirs = filter (\d -> (p +^ P.dirPos d) `S.member` F.pFov (playerFov bd)) availableDirs
 
 
     pathAlg BasicMonster     = chaseDir
