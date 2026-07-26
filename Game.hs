@@ -61,6 +61,7 @@ data Game = Game
     , prev         :: Maybe Game
     , unseenBeats  :: S.Set T.Type
     , prevHS       :: Maybe HS.Highscore
+    , showRecentHS :: Bool
     , gen          :: StdGen
     }
 
@@ -94,7 +95,7 @@ baseLevels = IM.fromList
 new :: MonadIO m => m Game
 new = do
     g <- initStdGen
-    pure $ Game { board = B.empty, transitions = [], inventory = I.empty, equipment = S.empty, selectedSlot = Nothing, score = 0, maxLife = 0, junk = 0, level = 0, round = 0, roundItems = [], levels = baseLevels, prev = Nothing, unseenBeats = S.fromList T.allTypes, prevHS = Nothing, gen = g }
+    pure $ Game { board = B.empty, transitions = [], inventory = I.empty, equipment = S.empty, selectedSlot = Nothing, score = 0, maxLife = 0, junk = 0, level = 0, round = 0, roundItems = [], levels = baseLevels, prev = Nothing, unseenBeats = S.fromList T.allTypes, prevHS = Nothing, showRecentHS = False, gen = g }
 
 modBoard :: (B.Board -> B.Board) -> Game -> Game
 modBoard f game = game { board = f $ board game }
@@ -156,6 +157,9 @@ setUnseenBeats = modUnseenBeats . const
 
 setPrevHS :: Maybe HS.Highscore -> Game -> Game
 setPrevHS mhs game = game { prevHS = mhs }
+
+modShowRecentHS :: (Bool -> Bool) -> Game -> Game
+modShowRecentHS f game = game { showRecentHS = f $ showRecentHS game }
 
 hasEquip :: Equipment -> Game -> Bool
 hasEquip e = (e `S.member`) . equipment
@@ -425,6 +429,7 @@ doCommand c = do
         RoundEnded -> case c of
             C.Accept -> nextRound
             C.SkipTutorial -> modify (setUnseenBeats $ S.fromList T.allTypes) >> nextRound
+            C.ToggleShowRecentHS -> modify $ modShowRecentHS not
             _        -> pure ()
         Tutorialising b -> case c of
             C.Accept       -> modify . modUnseenBeats . S.delete $ T.tp b

@@ -537,6 +537,9 @@ drawMainScreen game = do
         centre style y s
             | y >= scrH = pure ()
             | otherwise = TM.drawStr win style (CP.CPos ((scrW - length s) `div` 2) y) s
+        centreStyled y ss
+            | y >= scrH = pure ()
+            | otherwise = drawStyledStrs win (CP.CPos ((scrW - sum (length . fst <$> ss)) `div` 2) y) ss
         drawTitle = sequence_ [ drawStyledStrs win (CP.CPos titleX y) s
             | (y,s) <-
                 [ (0, [ ("┌────────┐", bdSt), ("     ", bgSt) ])
@@ -615,30 +618,33 @@ drawMainScreen game = do
                 Nothing -> centre styleBold 4 "Press Space to start"
 
     hss <- liftIO HSF.get
+    let recent = G.showRecentHS game
     let ourHSs = filter ((== HS.name curHs) . HS.name) hss
     let avOver = 10
     if length ourHSs < avOver
         then keysLine 7
         else
             let (avd,avm) = (`divMod` avOver) . sum $ HS.score <$> take avOver ourHSs
-                s = show avOver <> " game average: "
-                s' = show avd <> "." <> show avm <> "~"
-                x = (scrW - length s - length s') `div` 2
-            in drawStyledStrs win (CP.CPos x 7)
-                [ (s, style0)
-                , (s', scoreStyle)
+            in centreStyled 7
+                [ (show avOver <> " game average: ", style0)
+                , (show avd <> "." <> show avm <> "~  ", scoreStyle)
+                , ("R: " <> if recent then "Hide" else "Show", CStyle (onBlue white) False)
                 ]
 
     unless (null hss) $ do
         let someNamed = any (isJust . HS.name) hss
+            showHss
+                | recent = ourHSs
+                | otherwise = HS.sort hss
+
         drawStyledStrs win (CP.CPos (scoreX someNamed - 1) 9) $
-            [ ("Rank ", styleBold) ] <>
+            [ (if recent then "Last " else "Rank ", styleBold) ] <>
             [ ("  Name    ", CStyle cyan True) | someNamed ] <>
             [ ("Score ", scoreStyle)
             , ("Level ", style0)
             , ("Gems ", CStyle magenta False)
             , ("Equip", style0) ]
-        sequence_ [ drawHS someNamed (10+i) (HSRank $ 1+i) hs | (i,hs) <- zip [0..] $ HS.sort hss ]
+        sequence_ [ drawHS someNamed (10+i) (HSRank $ 1+i) hs | (i,hs) <- zip [0..9] showHss ]
 
     sequence_ [ TM.drawStr win
             (CStyle (onBlue white) $ n == 0)

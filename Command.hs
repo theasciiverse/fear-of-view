@@ -10,7 +10,7 @@ data Command
     | Accept
     | SkipTutorial
     | DebugAddPower | DebugAddJunk | DebugAddItems | DebugExit | DebugAlarm
-    | ToggleAscii
+    | ToggleAscii | ToggleShowRecentHS
     | Refresh | Redraw | Suspend | Clear
     | Quit | ForceQuit
     deriving (Eq, Ord, Show, Read)

@@ -76,6 +76,8 @@ basicBindings =
     , ('t', C.SkipTutorial)
     , ('T', C.SkipTutorial)
     , ('-', C.ToggleAscii)
+    , ('r', C.ToggleShowRecentHS)
+    , ('R', C.ToggleShowRecentHS)
     ]
 
 debugBindings :: KeyBindings
