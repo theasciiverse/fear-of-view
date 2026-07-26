@@ -136,6 +136,12 @@ wErase win = do
 
 wRefresh _ = liftIO B.terminalRefresh -- no per-win version
 
+scrSize :: UIM (Int,Int)
+scrSize = liftIO $ do
+    h <- B.terminalState B.TkHeight
+    w <- B.terminalState B.TkWidth
+    pure (h,w)
+
 instance TM.TermM UIM where
     drawStr = drawStr
     drawGlyph = drawGlyph
