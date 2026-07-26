@@ -84,6 +84,7 @@ debugBindings =
     , (ctrl 'J', C.DebugAddJunk)
     , (ctrl 'I', C.DebugAddItems)
     , (ctrl 'E', C.DebugExit)
+    , (ctrl 'A', C.DebugAlarm)
     ]
 
 defaultBindings = quitBindings <> debugBindings <> wasdBindings <> qwertyViBindings <> cursorBindings <> actionBindings <> basicBindings

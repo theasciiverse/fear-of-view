@@ -9,7 +9,7 @@ data Command
     | UsePower
     | Accept
     | SkipTutorial
-    | DebugAddPower | DebugAddJunk | DebugAddItems | DebugExit
+    | DebugAddPower | DebugAddJunk | DebugAddItems | DebugExit | DebugAlarm
     | ToggleAscii
     | Refresh | Redraw | Suspend | Clear
     | Quit | ForceQuit

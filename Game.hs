@@ -448,6 +448,7 @@ doCommand c = do
             C.DebugAddJunk -> addJunk
             C.DebugAddItems -> collect findableTreasures
             C.DebugExit -> exitLevel =<< (Player initLife,) <$> evalR (randElemUnsafe $ S.toList B.boundaryWPoss)
+            C.DebugAlarm -> doAlarm =<< evalR (randElemUnsafe P.dirs)
 #endif
             _ -> pure ()
 
