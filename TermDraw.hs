@@ -6,11 +6,12 @@
 module TermDraw where
 
 import           Control.Concurrent  (threadDelay)
-import           Control.Monad       (forM, forM_, mplus, unless, void)
+import           Control.Monad       (forM, forM_, mplus, unless, void, when)
 import           Control.Monad.State (get, lift, liftIO, put, runStateT)
 import           Data.Bifunctor      (bimap)
-import           Data.List           (intersperse)
-import           Data.Maybe          (fromMaybe, isJust, isNothing, maybeToList)
+import           Data.List           (intersperse, (\\))
+import           Data.Maybe          (fromMaybe, isJust, listToMaybe,
+                                      maybeToList)
 import           Safe                (atMay)
 
 #if !MIN_VERSION_base(4,20,0)
@@ -413,23 +414,25 @@ drawAlertedBoard AlertedBoard{ base = bd, creatureMoves = cmvs, itemMoves = imvs
         sequence_ $ M.mapWithKey (TM.drawCompositeGlyph BoardWin) compGlyphs
 
 drawInv :: TM.TermM m => Maybe I.Slot -> Int -> Bool -> I.Inventory -> Maybe Pow.Power -> m ()
-drawInv sel preserve highlightEmpty (I.Inventory inv) pow = do
+drawInv sel preserve hasHook (I.Inventory inv) pow = do
     let win = InvWin
     let str x y st = TM.drawStr win st (CP.CPos x y)
+    let firstEmpty = listToMaybe $ I.slots \\ M.keys inv
     str 0 0 styleBold "Inventory:"
     sequence_ $
         [ do
             str 0 slot style (show slot)
             case me of
-                Nothing -> pure ()
+                Nothing -> when hookSlot $ str 4 slot style "[Hook]"
                 Just e -> do
                     TM.drawGlyph win (CP.CPos 2 slot) (invItemGlyph e)
                     str 4 slot style $ show e
         | slot <- I.slots
         , let me = inv M.!? slot
-        , let style = CStyle col b where
+              hookSlot = hasHook && Just slot == firstEmpty
+              style = CStyle col b where
                 col | slot <= preserve = yellow
-                    | highlightEmpty && isNothing me = red
+                    | hookSlot = cstyleCol $ equipStyle Hook
                     | otherwise = white
                 b = sel == Just slot
         ] <>
