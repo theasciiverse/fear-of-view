@@ -1,6 +1,6 @@
 cabal-version:      2.2
 name:               fearOfView
-version:            0.1.1.0
+version:            0.2.0.0
 license:            AGPL-3.0-or-later
 license-file:       COPYING
 maintainer:         mbays@sdf.org
@@ -10,7 +10,7 @@ synopsis:           A terminal broughlike game about manipulating vision
 description:
     A constrained roguelike ("broughlike") game played on a 5x5 grid of cells
     which are regenerated when out of view. Can be compiled for play on a 
-    genuine colour terminal using ncurses, or in a pseudo-terminal using 
+    genuine colour terminal using ncurses, or in graphics mode using 
     bearlibterminal.
 category:           Game
 extra-doc-files: CHANGELOG.md README.md fov-shot.png
