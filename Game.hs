@@ -67,7 +67,7 @@ data Game = Game
 
 maxLevel, maxScore, initLife, charmBonus :: Int
 maxLevel = 3
-maxScore = 20
+maxScore = 25
 initLife = 7
 charmBonus = 2
 
@@ -83,13 +83,13 @@ baseLevels :: IM.IntMap BC.BoardConf
 baseLevels = IM.fromList
     [ (1, BC.BoardConf 1
         baseCRF
-        (RF.RollFrom initWallSides $ replicate 8 Hedge))
+        (RF.RollFrom initWallSides $ replicate 9 Hedge))
     , (2, BC.BoardConf 2
         baseCRF
-        (RF.RollFrom initWallSides $ replicate 8 BasicWall <> [Pillar]))
+        (RF.RollFrom initWallSides $ replicate 9 BasicWall <> [Pillar]))
     , (3, BC.BoardConf 3
         baseCRF
-        (RF.RollFrom initWallSides $ replicate 8 BasicWall <> [Window, Window]))
+        (RF.RollFrom initWallSides $ replicate 9 BasicWall <> [Window, Window]))
     ]
 
 new :: MonadIO m => m Game
