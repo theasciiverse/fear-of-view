@@ -431,8 +431,8 @@ drawInv sel preserve hasHook (I.Inventory inv) pow = do
         , let me = inv M.!? slot
               hookSlot = hasHook && Just slot == firstEmpty
               style = CStyle col b where
-                col | slot <= preserve = yellow
-                    | hookSlot = cstyleCol $ equipStyle Hook
+                col | hookSlot = cstyleCol $ equipStyle Hook
+                    | slot <= preserve = yellow
                     | otherwise = white
                 b = sel == Just slot
         ] <>
