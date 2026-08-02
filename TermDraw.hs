@@ -554,6 +554,7 @@ drawMainScreen game = do
             titleX = (scrW - length "| Fe@r of|View") `div` 2
             bdSt = CStyle yellow True
             bgSt = CStyle (onBlue white) True
+        drawVersion = TM.drawStr win style0 (CP.CPos 0 $ scrH-1) $ "v" <> CURRENT_PACKAGE_VERSION
         wonStyle = CStyle magenta True
 
     ascii <- TM.asciiOnly
@@ -606,6 +607,7 @@ drawMainScreen game = do
     let keysLine y = centre style0 y "Keys: cursors / WASD / HJKL; 0-9"
 
     drawTitle
+    drawVersion
     if HS.maxRound curHs > 1
         then do
             centre styleBold 3 "Game in progress:"
