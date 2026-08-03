@@ -451,7 +451,11 @@ creatureCanTryMove bd c p dir =
         ]
 
 enterAt :: Int -> P.WPos -> Board -> Board
-enterAt lf wp@(P.WPos (P.Pos x y) _) = modVisible (F.insertP p') . modCreatures (M.insert p' (Player lf)) . modExits (M.insert wp Entrance) where
+enterAt lf wp@(P.WPos (P.Pos x y) _) =
+    modVisible (F.insertP p')
+    . modCreatures (M.insert p' (Player lf))
+    . modExits (M.insert wp Entrance)
+    where
     p' = P.Pos (max 0 x) (max 0 y)
 
 oppositeWPos :: P.WPos -> P.WPos
@@ -580,10 +584,14 @@ isHasteRound bd
     | Just n <- statuses bd M.!? Haste = n `mod` 2 == 1
     | otherwise = False
 
-beginExpect :: Board -> Rand StdGen Board
+beginExpect, reExpect, expectAll :: Board -> Rand StdGen Board
 beginExpect bd
     | expectant bd = pure bd
-    | otherwise = (expectAt . S.toList $ invisible bd) bd
+    | otherwise = expectAll bd
+reExpect bd
+    | not $ expectant bd = pure bd
+    | otherwise = expectAll bd
+expectAll bd = (expectAt . S.toList $ invisible bd) bd
 
 expectAt :: [P.Pos] -> Board -> Rand StdGen Board
 expectAt ps bd0 = foldM expectP bd0 ps

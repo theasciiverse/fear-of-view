@@ -241,6 +241,7 @@ enterNewBoard lf newRound e = do
         , B.possItems = is
         , B.statuses = statuses
         }
+    modifyR $ modBoardM B.reExpect
     setFov
     where
     currentLevelBC game = fromMaybe BC.emptyBoardConf . (IM.!? level game) $ levels game
