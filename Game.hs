@@ -454,6 +454,7 @@ doCommand c = do
             C.DebugAddItems -> collect findableTreasures
             C.DebugExit -> exitLevel =<< (Player initLife,) <$> evalR (randElemUnsafe $ S.toList B.boundaryWPoss)
             C.DebugAlarm -> doAlarm =<< evalR (randElemUnsafe P.dirs)
+            C.DebugWait -> const () <$> modBoardTell B.doPhysics
 #endif
             _ -> pure ()
 
