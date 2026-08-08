@@ -3,8 +3,6 @@ A terminal broughlike game about manipulating vision.
 
 ![Screenshot](fov-shot.png "Screenshot")
 
-* [Gameplay animation](fov-anim.gif)
-
 Released under the AGPL, version 3 or later.
 
 * [Changelog](CHANGELOG.md)
@@ -14,22 +12,15 @@ Released under the AGPL, version 3 or later.
 * Password: fov
 
 ## Source
-* [Source tarball](fearOfView-0.1.1.0.tar.gz)
+* [Source tarball](fearOfView-0.2.0.0.tar.gz)
 * Source repository: `git clone https://thegonz.net/~fov/fearOfView.git`
 * [Browsable source tree on Hackage](https://hackage.haskell.org/package/fearOfView/src/)
 
 ## Binaries
-### Linux binary
-Unpack the following tarball and run the script `fearOfView.sh` in a terminal.
-
-* [fearOfView-linux-x86\_32-glibc-2.31.tgz](fearOfView-linux-x86_32-glibc-2.31.tgz)
-
-It should work on any reasonably up-to-date system (Debian 11+); please let me know if it doesn't.
-
 ### Windows binary
 Unpack the following zip and run `fearOfView.exe`.
 
-* [fearOfView-x86\_64-mingw-bear.zip](fearOfView-x86_64-mingw-bear.zip)
+* [fearOfView-0.2.0.0-x86\_64-mingw-bear.zip](fearOfView-0.2.0.0-x86_64-mingw-bear.zip)
 
 ## Cabal
 This is the most versatile installation method, but requires you to have cabal-install and ncurses installed. It should then just be a matter of:
