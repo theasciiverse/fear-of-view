@@ -3,7 +3,6 @@ module HighscoreFile (add, get) where
 import           Codec.Serialise
 import           Control.Exception.Safe
 import           Control.Monad
-import           System.Directory
 import           System.FileLock        (SharedExclusive (..), withFileLock)
 import           System.FilePath        ((</>))
 
@@ -13,8 +12,7 @@ import           Serialise              ()
 
 getPath :: IO FilePath
 getPath = do
-    dir <- getXdgDirectory XdgData gameName
-    createDirectoryIfMissing True dir
+    dir <- stateDir
     pure $ dir </> "highscores"
 
 readHSs :: String -> IO HS.Highscores

@@ -13,9 +13,6 @@ import           Control.Monad.State    (get, gets, lift, liftIO, put)
 import           Safe                   (headMay)
 import           System.Console.GetOpt  (ArgDescr (..), ArgOrder (..),
                                          OptDescr (..), getOpt, usageInfo)
-import           System.Directory       (XdgDirectory (..),
-                                         createDirectoryIfMissing,
-                                         getXdgDirectory)
 import           System.Environment     (getArgs)
 import           System.Exit            (exitSuccess)
 import           System.FilePath        ((</>))
@@ -90,9 +87,8 @@ main = do
     statePath <- case headMay [ path | StatePath path <- opts ] of
         Just path -> pure path
         Nothing -> do
-            dataDir <- getXdgDirectory XdgData gameName
-            createDirectoryIfMissing True dataDir
-            pure $ dataDir </> "gamestate"
+            dir <- stateDir
+            pure $ dir </> "gamestate"
     let ascii = AsciiOnly `elem` opts
     let dvorak = Dvorak `elem` opts
     let username = headMay [ name | Username name <- opts ]
