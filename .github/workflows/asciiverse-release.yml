@@ -1,0 +1,107 @@
+# Builds Fear of View's curses edition for the Asciiverse catalog: one
+# archive per target, named <id>-<target>.tar.gz, plus a SHA256SUMS file,
+# attached to a GitHub release (hub/catalog/SCHEMA.md, release.source =
+# "github"). Runs on a pushed v* tag, or by hand for an existing tag.
+#
+# Each archive holds one static fearOfView binary (asciiverse/build.sh),
+# which needs no library on the player's machine, with the licence and
+# readme. Linux only: hscurses wants ncursesw through pkg-config, which
+# macOS has only from Homebrew, and Windows not at all.
+
+name: asciiverse-release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "existing tag to build and release"
+        required: true
+
+env:
+  ID: fear-of-view
+  TAG: ${{ inputs.tag || github.ref_name }}
+  GHC: "9.8.2"
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { target: x86_64-unknown-linux-gnu, os: ubuntu-22.04 }
+          - { target: aarch64-unknown-linux-gnu, os: ubuntu-22.04-arm }
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.TAG }}
+
+      - name: System libraries
+        run: sudo apt-get update && sudo apt-get install -y libncurses-dev libgmp-dev libffi-dev libnuma-dev pkg-config file
+
+      - uses: haskell-actions/setup@v2
+        id: setup
+        with:
+          ghc-version: ${{ env.GHC }}
+          cabal-version: "3.12.1.0"
+
+      - name: Freeze
+        run: cabal freeze -f curses -f -bear
+
+      - uses: actions/cache/restore@v4
+        id: cache
+        with:
+          key: ${{ matrix.target }}-${{ env.GHC }}-${{ hashFiles('cabal.project.freeze') }}
+          path: ${{ steps.setup.outputs.cabal-store }}
+          restore-keys: |
+            ${{ matrix.target }}-${{ env.GHC }}-
+
+      - name: Build
+        run: sh asciiverse/build.sh
+
+      - uses: actions/cache/save@v4
+        if: always() && steps.cache.outputs.cache-hit != 'true'
+        with:
+          key: ${{ matrix.target }}-${{ env.GHC }}-${{ hashFiles('cabal.project.freeze') }}
+          path: ${{ steps.setup.outputs.cabal-store }}
+
+      - name: Smoke test
+        run: python3 asciiverse/smoke.py stage/fearOfView
+
+      - name: Package
+        run: |
+          # the binary sits at the top of the archive, where av looks for it
+          mkdir -p dist
+          tar -czf "dist/$ID-${{ matrix.target }}.tar.gz" -C stage .
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.target }}
+          path: dist/*
+
+  release:
+    needs: build
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: Checksums
+        working-directory: dist
+        run: sha256sum * > SHA256SUMS && cat SHA256SUMS
+
+      - name: Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release view "$TAG" -R "$GITHUB_REPOSITORY" >/dev/null 2>&1 \
+            || gh release create "$TAG" -R "$GITHUB_REPOSITORY" --title "Fear of View $TAG" \
+                 --notes "Fear of View $TAG from Martin Bays' thegonz.net/~fov/fearOfView.git, curses edition, built for the Asciiverse catalog."
+          gh release upload "$TAG" dist/* -R "$GITHUB_REPOSITORY" --clobber
